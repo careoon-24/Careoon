@@ -1,0 +1,316 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  PATIENT
+  NURSE
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum BookingStatus {
+  DRAFT
+  PAYMENT_PENDING
+  SEARCHING_NURSE
+  NURSE_OFFERED
+  CONFIRMED
+  NURSE_ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING_VERIFICATION
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum PayableStatus {
+  UNPAID
+  BATCHED
+  PAID
+}
+
+enum BatchStatus {
+  OPEN
+  LOCKED
+  PROCESSING
+  PAID
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  phone        String    @unique
+  fullName     String
+  role         Role      @default(PATIENT)
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  nurseProfile   NurseProfile?
+  patientBookings Booking[]       @relation("PatientBookings")
+  patientReviews  Review[]        @relation("PatientReviews")
+  supportTickets  SupportTicket[] @relation("UserTickets")
+  auditLogs       AuditLog[]      @relation("ActorAuditLogs")
+}
+
+model NurseProfile {
+  id                        String             @id @default(uuid())
+  userId                    String             @unique
+  user                      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registrationNumber        String
+  qualifications            String             // JSON string or comma-separated
+  experienceYears           Int                @default(1)
+  bio                       String?
+  serviceRadiusKm           Float              @default(10.0)
+  latitude                  Float              @default(18.5204)
+  longitude                 Float              @default(73.8567)
+  policeVerificationStatus  VerificationStatus @default(PENDING)
+  adminApprovalStatus       VerificationStatus @default(PENDING)
+  ratingAverage             Float              @default(5.0)
+  ratingCount               Int                @default(0)
+  isAvailableNow            Boolean            @default(true)
+  bankAccountNumber         String?
+  bankIfsc                  String?
+  bankHolderName            String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  assignedBookings          Booking[]          @relation("AssignedNurseBookings")
+  offers                    BookingOffer[]
+  payables                  Payable[]
+  reviews                   Review[]           @relation("NurseReviews")
+}
+
+model ServiceCategory {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  displayOrder Int      @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  services    Service[]
+}
+
+model Service {
+  id                 String          @id @default(uuid())
+  categoryId         String
+  category           ServiceCategory @relation(fields: [categoryId], references: [id])
+  name               String
+  slug               String          @unique
+  description        String
+  shortDescription   String?
+  basePrice          Float
+  durationMinutes    Int
+  commissionPercent  Float           @default(15.0)
+  eligibilityRules   String?         // JSON string array of requirements
+  isActive           Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  bookings           Booking[]
+}
+
+model Booking {
+  id                   String        @id @default(uuid())
+  bookingCode          String        @unique
+  patientId            String
+  patient              User          @relation("PatientBookings", fields: [patientId], references: [id])
+  serviceId            String
+  service              Service       @relation(fields: [serviceId], references: [id])
+  nurseId              String?
+  assignedNurse        NurseProfile? @relation("AssignedNurseBookings", fields: [nurseId], references: [id])
+  
+  scheduledDate        String        // YYYY-MM-DD
+  scheduledTime        String        // HH:MM
+  durationMinutes      Int           @default(60)
+  
+  addressLine          String
+  landmark             String?
+  city                 String
+  postalCode           String
+  latitude             Float?
+  longitude            Float?
+  
+  patientNotes         String?
+  patientContactPhone  String
+  patientName          String
+  patientAge           Int?
+  patientGender        String?
+  
+  // Financial Snapshot (Immutable once confirmed)
+  servicePrice         Float
+  commissionPercent    Float
+  commissionAmount     Float
+  nurseEarningsAmount  Float
+  tipAmount            Float         @default(0)
+  totalPatientAmount   Float
+  
+  status               BookingStatus @default(DRAFT)
+  paymentStatus        PaymentStatus @default(UNPAID)
+  
+  arrivalNotes         String?
+  clinicalNotes        String?
+  arrivedAt            DateTime?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  cancelledAt          DateTime?
+  cancellationReason   String?
+  
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  offers               BookingOffer[]
+  payments             Payment[]
+  payables             Payable[]
+  reviews              Review[]
+  supportTickets       SupportTicket[]
+}
+
+model BookingOffer {
+  id              String      @id @default(uuid())
+  bookingId       String
+  booking         Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  nurseId         String
+  nurse           NurseProfile @relation(fields: [nurseId], references: [id], onDelete: Cascade)
+  status          OfferStatus @default(PENDING)
+  sentAt          DateTime    @default(now())
+  expiresAt       DateTime
+  respondedAt     DateTime?
+  rejectionReason String?
+
+  @@index([bookingId])
+  @@index([nurseId])
+}
+
+model Payment {
+  id                 String        @id @default(uuid())
+  bookingId          String
+  booking            Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount             Float
+  currency           String        @default("INR")
+  method             String        // UPI, CARD, CASH
+  status             PaymentStatus @default(PENDING_VERIFICATION)
+  paymentRef         String?
+  failureReason      String?
+  reconciledByAdminId String?
+  reconciledAt       DateTime?
+  createdAt          DateTime      @default(now())
+}
+
+model Payable {
+  id             String        @id @default(uuid())
+  nurseId        String
+  nurse          NurseProfile  @relation(fields: [nurseId], references: [id], onDelete: Cascade)
+  bookingId      String
+  booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount         Float
+  status         PayableStatus @default(UNPAID)
+  payoutBatchId  String?
+  payoutBatch    PayoutBatch?  @relation(fields: [payoutBatchId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([nurseId])
+  @@index([payoutBatchId])
+}
+
+model PayoutBatch {
+  id                 String      @id @default(uuid())
+  batchCode          String      @unique
+  periodStart        DateTime
+  periodEnd          DateTime
+  totalAmount        Float
+  status             BatchStatus @default(OPEN)
+  processedByAdminId String?
+  processedAt        DateTime?
+  createdAt          DateTime    @default(now())
+
+  payables           Payable[]
+}
+
+model Review {
+  id          String       @id @default(uuid())
+  bookingId   String
+  booking     Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  patientId   String
+  patient     User         @relation("PatientReviews", fields: [patientId], references: [id])
+  nurseId     String
+  nurse       NurseProfile @relation("NurseReviews", fields: [nurseId], references: [id])
+  rating      Int          // 1 to 5
+  comment     String?
+  isAnonymous Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+}
+
+model SupportTicket {
+  id              String         @id @default(uuid())
+  bookingId       String?
+  booking         Booking?       @relation(fields: [bookingId], references: [id])
+  userId          String
+  user            User           @relation("UserTickets", fields: [userId], references: [id])
+  subject         String
+  description     String
+  priority        TicketPriority @default(MEDIUM)
+  status          TicketStatus   @default(OPEN)
+  assignedAdminId String?
+  resolutionNotes String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  actorId    String
+  actor      User     @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  actorRole  Role
+  oldValues  String?  // JSON string
+  newValues  String?  // JSON string
+  timestamp  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+}
