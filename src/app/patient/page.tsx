@@ -17,10 +17,36 @@ export default function PatientServicesPage() {
   const { categories, services } = useCareoon();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    fetch("/api/services")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.categories && data.categories.length > 0) {
+          setDbCategories(data.categories);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const activeServices = services.filter((s) => s.isActive);
+  const dbServices = dbCategories.flatMap((c) =>
+    (c.services || []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      description: s.description || s.shortDescription,
+      basePrice: s.basePrice,
+      durationMinutes: s.durationMinutes,
+      categoryId: c.id,
+      isActive: s.isActive,
+    }))
+  );
 
-  const filteredServices = activeServices.filter((service) => {
+  const effectiveServices = dbServices.length > 0 ? dbServices : activeServices;
+  const effectiveCategories = dbCategories.length > 0 ? dbCategories : categories.filter((c) => c.isActive);
+
+  const filteredServices = effectiveServices.filter((service) => {
     const matchesCategory =
       selectedCategory === "all" || service.categoryId === selectedCategory;
     const matchesSearch =
@@ -65,21 +91,19 @@ export default function PatientServicesPage() {
         >
           All Procedures
         </button>
-        {categories
-          .filter((c) => c.isActive)
-          .map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                selectedCategory === cat.id
-                  ? "bg-blue-600 text-white"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200"
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
+        {effectiveCategories.map((cat: any) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              selectedCategory === cat.id
+                ? "bg-blue-600 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200"
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
       </div>
 
       {/* Services List */}
