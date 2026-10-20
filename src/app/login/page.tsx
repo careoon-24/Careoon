@@ -105,49 +105,38 @@ function LoginFormContent() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 sm:px-10">
           
-          {/* Quick Demo Login Cards */}
+          {/* Quick Admin Helper */}
           {activeTab === 'LOGIN' && (
             <div className="mb-6">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Quick Test Logins (1-Click)
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('patient@careoon.com', 'patient123')}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-teal-100 bg-teal-50/50 hover:bg-teal-50 text-teal-800 transition text-center"
-                >
-                  <Heart className="w-4 h-4 mb-1 text-teal-600" />
-                  <span className="text-xs font-semibold">Patient</span>
-                  <span className="text-[9px] text-teal-600">Sunita D.</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('nurse@careoon.com', 'nurse123')}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-blue-100 bg-blue-50/50 hover:bg-blue-50 text-blue-800 transition text-center"
-                >
-                  <Stethoscope className="w-4 h-4 mb-1 text-blue-600" />
-                  <span className="text-xs font-semibold">Nurse</span>
-                  <span className="text-[9px] text-blue-600">Pooja K.</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('admin@careoon.com', 'admin123')}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-amber-100 bg-amber-50/50 hover:bg-amber-50 text-amber-800 transition text-center"
-                >
-                  <ShieldCheck className="w-4 h-4 mb-1 text-amber-600" />
-                  <span className="text-xs font-semibold">Admin</span>
-                  <span className="text-[9px] text-amber-600">Operations</span>
-                </button>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Admin Master Access
+                </span>
+                <span className="text-[10px] text-teal-600 font-medium">1-Click</span>
               </div>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('admin@careoon.com', 'admin123')}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl border border-amber-200/80 bg-amber-50/60 hover:bg-amber-100/70 text-amber-900 transition text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold block">Careoon Master Admin</span>
+                    <span className="text-[10px] text-amber-700">admin@careoon.com (Operations)</span>
+                  </div>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-amber-600" />
+              </button>
+
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-2 text-slate-400">or enter credentials</span>
+                  <span className="bg-white px-2 text-slate-400">or sign in with your account</span>
                 </div>
               </div>
             </div>
