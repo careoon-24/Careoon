@@ -71,7 +71,7 @@ export default function BookServicePage() {
   const eligibleNurses = candidateNurses.filter((c) => c.eligible);
   const ineligibleNurses = candidateNurses.filter((c) => !c.eligible);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -81,26 +81,53 @@ export default function BookServicePage() {
     }
 
     setSubmitting(true);
-    const result = createBookingWithNurseOffer(
-      service.id,
-      {
-        street,
-        apartment,
+
+    try {
+      const { createBookingAction } = await import("@/actions/bookings");
+      const res = await createBookingAction({
+        serviceId: service.id,
+        nurseId: selectedNurseId,
+        scheduledDate,
+        scheduledTime: scheduledTimeSlot,
+        addressLine: `${street}, ${apartment}`,
         city,
         postalCode,
-        instructions: specialInstructions,
-      },
-      scheduledDate,
-      scheduledTimeSlot,
-      selectedNurseId,
-      specialInstructions
-    );
+        patientContactPhone: (currentUser as any)?.phone || "+919876543210",
+        patientName: currentUser?.fullName || "Patient",
+        patientNotes: specialInstructions,
+      });
 
-    if (result.success && result.bookingId) {
-      router.push(`/patient/bookings/${result.bookingId}`);
-    } else {
-      setErrorMessage(result.error || "Failed to create booking offer.");
-      setSubmitting(false);
+      if (res.success && res.bookingId) {
+        router.push(`/patient/bookings/${res.bookingId}`);
+        return;
+      }
+    } catch (err: any) {
+      if (err.message?.includes("logged in")) {
+        router.push(`/login?redirect=/patient/book/${service.id}`);
+        return;
+      }
+      
+      const result = createBookingWithNurseOffer(
+        service.id,
+        {
+          street,
+          apartment,
+          city,
+          postalCode,
+          instructions: specialInstructions,
+        },
+        scheduledDate,
+        scheduledTimeSlot,
+        selectedNurseId,
+        specialInstructions
+      );
+
+      if (result.success && result.bookingId) {
+        router.push(`/patient/bookings/${result.bookingId}`);
+      } else {
+        setErrorMessage(result.error || err.message || "Failed to create booking offer.");
+        setSubmitting(false);
+      }
     }
   };
 

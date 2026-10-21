@@ -40,22 +40,38 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors">
-      <div className="max-w-md md:max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800 transition-colors">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-9 h-9 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/20 group-hover:scale-105 transition-transform">
             <HeartPulse className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-base tracking-tight text-zinc-900 dark:text-white">
+            <span className="font-black text-lg tracking-tight text-zinc-900 dark:text-white block leading-none">
               Careoon
             </span>
-            <span className="hidden sm:inline-block ml-1.5 text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
-              Home Nursing
+            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+              Verified Home Nursing
             </span>
           </div>
         </Link>
+
+        {/* Desktop Web Navigation Links (Hidden on small mobile screens) */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-zinc-600 dark:text-zinc-300">
+          <Link href="/" className="hover:text-teal-600 transition">
+            Home Care
+          </Link>
+          <Link href="/patient" className="hover:text-teal-600 transition">
+            Clinical Procedures
+          </Link>
+          <Link href="/#why" className="hover:text-teal-600 transition">
+            Why Careoon
+          </Link>
+          <Link href="/patient/support" className="hover:text-teal-600 transition">
+            24/7 Helpline
+          </Link>
+        </nav>
 
         {/* User Status / Clean Account Controls */}
         <div className="flex items-center gap-2">

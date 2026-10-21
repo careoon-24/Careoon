@@ -158,3 +158,75 @@ export async function markBatchPaidAction(batchId: string) {
   revalidatePath('/admin/finance');
   return { success: true };
 }
+
+export async function nurseCollectPaymentAction(formData: {
+  bookingId: string;
+  method: 'UPI' | 'CASH';
+  isDone: boolean;
+  notes?: string;
+  collectedAmount?: number;
+}) {
+  const session = await getSession();
+  if (!session || (session.role !== 'NURSE' && session.role !== 'ADMIN')) {
+    throw new Error('Unauthorized');
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: formData.bookingId },
+  });
+
+  if (!booking) {
+    throw new Error('Booking not found');
+  }
+
+  const now = new Date();
+  const paymentStatus = formData.isDone ? 'PAID' : 'PENDING_VERIFICATION';
+  const amount = formData.collectedAmount || booking.totalPatientAmount;
+
+  // 1. Create Payment Record with full timestamp & nurse tracking
+  const payment = await prisma.payment.create({
+    data: {
+      bookingId: booking.id,
+      amount,
+      method: formData.method,
+      status: paymentStatus,
+      isCashCollected: formData.method === 'CASH' && formData.isDone,
+      collectedByNurseId: session.userId,
+      collectedAt: now,
+      nurseNotes: formData.notes,
+      paymentRef: `${formData.method}-${now.getTime()}`,
+    },
+  });
+
+  // 2. Update Booking Status
+  await prisma.booking.update({
+    where: { id: booking.id },
+    data: {
+      paymentStatus: formData.isDone ? 'PAID' : 'PENDING_VERIFICATION',
+    },
+  });
+
+  // 3. Immutable Audit Log tracking exact time and result
+  await prisma.auditLog.create({
+    data: {
+      entityType: 'PAYMENT_COLLECTION',
+      entityId: payment.id,
+      action: formData.isDone ? 'NURSE_PAYMENT_COLLECTED_DONE' : 'NURSE_PAYMENT_ATTEMPT_NOT_DONE',
+      actorId: session.userId,
+      actorRole: session.role,
+      newValues: JSON.stringify({
+        bookingId: booking.id,
+        method: formData.method,
+        amount,
+        isDone: formData.isDone,
+        timestamp: now.toISOString(),
+        notes: formData.notes,
+      }),
+    },
+  });
+
+  revalidatePath(`/nurse/jobs/${booking.id}`);
+  revalidatePath(`/patient/bookings/${booking.id}`);
+  revalidatePath('/admin/finance');
+  return { success: true, paymentId: payment.id, status: paymentStatus };
+}

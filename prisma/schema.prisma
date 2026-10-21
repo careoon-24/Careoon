@@ -191,6 +191,8 @@ model Booking {
   
   arrivalNotes         String?
   clinicalNotes        String?
+  vitalSigns           String?       // JSON string: { bp: "120/80", pulse: 76, sugar: 110, spo2: 99, temp: 98.4 }
+  prescriptionNotes    String?
   arrivedAt            DateTime?
   startedAt            DateTime?
   completedAt          DateTime?
@@ -224,18 +226,22 @@ model BookingOffer {
 }
 
 model Payment {
-  id                 String        @id @default(uuid())
-  bookingId          String
-  booking            Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  amount             Float
-  currency           String        @default("INR")
-  method             String        // UPI, CARD, CASH
-  status             PaymentStatus @default(PENDING_VERIFICATION)
-  paymentRef         String?
-  failureReason      String?
+  id                  String        @id @default(uuid())
+  bookingId           String
+  booking             Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount              Float
+  currency            String        @default("INR")
+  method              String        // UPI, CASH
+  status              PaymentStatus @default(PENDING_VERIFICATION)
+  paymentRef          String?
+  isCashCollected     Boolean       @default(false)
+  collectedByNurseId  String?
+  collectedAt         DateTime?
+  nurseNotes          String?
+  failureReason       String?
   reconciledByAdminId String?
-  reconciledAt       DateTime?
-  createdAt          DateTime      @default(now())
+  reconciledAt        DateTime?
+  createdAt           DateTime      @default(now())
 }
 
 model Payable {

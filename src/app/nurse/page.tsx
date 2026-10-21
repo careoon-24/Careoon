@@ -54,26 +54,38 @@ export default function NurseDashboardPage() {
     ["confirmed", "nurse_arrived", "in_progress"].includes(b.status)
   );
 
-  const handleAccept = (offerId: string) => {
+  const handleAccept = async (offerId: string) => {
     setActionError("");
-    const res = nurseAcceptOffer(offerId);
-    if (!res.success) {
-      setActionError(res.error || "Failed to accept offer.");
+    try {
+      const { respondToOfferAction } = await import("@/actions/bookings");
+      await respondToOfferAction(offerId, true);
+    } catch (err: any) {
+      const res = nurseAcceptOffer(offerId);
+      if (!res.success) {
+        setActionError(res.error || err.message || "Failed to accept offer.");
+      }
     }
   };
 
-  const handleRejectConfirm = () => {
+  const handleRejectConfirm = async () => {
     if (!rejectingOfferId) return;
     if (!rejectReason.trim()) {
       setActionError("Please provide a reason for declining.");
       return;
     }
-    const res = nurseRejectOffer(rejectingOfferId, rejectReason);
-    if (res.success) {
+    try {
+      const { respondToOfferAction } = await import("@/actions/bookings");
+      await respondToOfferAction(rejectingOfferId, false, rejectReason);
       setRejectingOfferId(null);
       setRejectReason("");
-    } else {
-      setActionError(res.error || "Failed to decline offer.");
+    } catch (err: any) {
+      const res = nurseRejectOffer(rejectingOfferId, rejectReason);
+      if (res.success) {
+        setRejectingOfferId(null);
+        setRejectReason("");
+      } else {
+        setActionError(res.error || err.message || "Failed to decline offer.");
+      }
     }
   };
 
