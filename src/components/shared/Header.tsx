@@ -81,55 +81,33 @@ export function Header() {
           </Link>
         </nav>
 
-        {/* User Status / Role-Aware Navigation */}
+        {/* User Status / Navigation */}
         <div className="flex items-center gap-2">
           {user ? (
             <div className="flex items-center gap-2">
-              {user.role === "ADMIN" && (
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Admin Console</span>
-                </Link>
-              )}
-
-              {user.role === "NURSE" && (
-                <Link
-                  href="/nurse"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition"
-                >
-                  <Stethoscope className="w-3.5 h-3.5" />
-                  <span>Nurse Dashboard</span>
-                </Link>
-              )}
-
-              {user.role === "PATIENT" && (
-                <Link
-                  href="/patient"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 font-bold text-xs shadow-xs transition"
-                >
-                  <User className="w-3.5 h-3.5 text-teal-600" />
-                  <span className="max-w-[120px] truncate">{user.fullName}</span>
-                </Link>
-              )}
+              <Link
+                href="/patient/profile"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition"
+              >
+                <User className="w-3.5 h-3.5 text-teal-600" />
+                <span className="max-w-[120px] truncate">{user.fullName || "My Profile"}</span>
+              </Link>
 
               <button
                 onClick={handleLogout}
-                title="Sign out"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-bold transition shadow-2xs"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Logout</span>
               </button>
             </div>
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20 active:scale-95 transition"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
+              <span>Sign In / Register</span>
             </Link>
           )}
         </div>

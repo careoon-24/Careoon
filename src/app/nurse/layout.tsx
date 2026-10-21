@@ -1,13 +1,19 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Stethoscope, DollarSign, CalendarCheck, UserCheck, ShieldCheck } from "lucide-react";
-import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Stethoscope, DollarSign, CalendarCheck, UserCheck, ShieldCheck, LogOut } from "lucide-react";
 
 export default function NurseLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleNurseLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/nurse/login");
+    router.refresh();
+  };
 
   // If on nurse login or activate page, render clean children without nurse dashboard wrapper
   if (pathname === '/nurse/login' || pathname === '/nurse/activate') {
@@ -119,9 +125,20 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
           })}
         </div>
 
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Online & Ready</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="hidden sm:inline">Online & Ready</span>
+          </div>
+
+          <button
+            onClick={handleNurseLogout}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition shadow-2xs cursor-pointer"
+            title="Sign out of Nurse Portal"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
 

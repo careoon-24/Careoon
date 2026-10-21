@@ -6,6 +6,7 @@ import {
   updatePatientProfileAction,
   saveFamilyMemberAction,
 } from "@/actions/profile";
+import { useRouter } from "next/navigation";
 import {
   User,
   MapPin,
@@ -20,13 +21,21 @@ import {
   Clock,
   Sparkles,
   Building,
+  LogOut,
 } from "lucide-react";
 
 export default function PatientProfilePage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  };
 
   // Form State
   const [fullName, setFullName] = useState<string>("");
@@ -498,7 +507,7 @@ export default function PatientProfilePage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-black text-xs shadow-lg shadow-teal-600/25 active:scale-95 transition flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-black text-xs shadow-lg shadow-teal-600/25 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? "Saving to Cloud DB..." : "Save Patient Profile"}</span>
@@ -506,12 +515,28 @@ export default function PatientProfilePage() {
         </div>
       </form>
 
+      {/* Account Logout Action Card */}
+      <div className="p-5 rounded-3xl bg-white border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">Sign Out of Careoon Account</h3>
+          <p className="text-xs text-slate-500">Securely disconnect this device. You can sign back in anytime with your registered phone number.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition shadow-2xs shrink-0 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout (लॉगआउट करा)</span>
+        </button>
+      </div>
+
       {/* Add Family Member Modal */}
       {showAddFamilyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-black text-base text-slate-900 dark:text-white">
+              <h3 className="font-black text-base text-slate-900">
                 Add Family Member
               </h3>
               <button

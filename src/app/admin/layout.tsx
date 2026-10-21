@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Shield,
   Activity,
@@ -12,11 +12,18 @@ import {
   DollarSign,
   FileSpreadsheet,
   AlertCircle,
+  LogOut,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleAdminLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/admin/login");
+    router.refresh();
+  };
 
   // If on admin login page, render clean children without admin sidebar
   if (pathname === '/admin/login') {
@@ -132,6 +139,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
+
+        {/* Sidebar Bottom Admin Logout Button */}
+        <div className="pt-4 border-t border-slate-200 mt-auto">
+          <button
+            onClick={handleAdminLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition shadow-2xs cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout Admin (लॉगआउट)</span>
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Top Navigation Pills */}
@@ -157,6 +175,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           );
         })}
+        <button
+          onClick={handleAdminLogout}
+          className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-1 cursor-pointer"
+        >
+          <LogOut className="w-3 h-3" />
+          <span>Logout</span>
+        </button>
       </div>
 
       {/* Main Admin Content */}
