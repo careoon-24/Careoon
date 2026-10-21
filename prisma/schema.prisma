@@ -112,13 +112,14 @@ model NurseProfile {
   id                        String             @id @default(uuid())
   userId                    String             @unique
   user                      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nurseCode                 String?            @unique // Unique System ID e.g. "SANGLI-RN-7401"
   registrationNumber        String
   qualifications            String             // JSON string or comma-separated
   experienceYears           Int                @default(1)
   bio                       String?
   serviceRadiusKm           Float              @default(10.0)
-  latitude                  Float              @default(18.5204)
-  longitude                 Float              @default(73.8567)
+  latitude                  Float              @default(16.8524) // Sangli Center
+  longitude                 Float              @default(74.5815)
   policeVerificationStatus  VerificationStatus @default(PENDING)
   adminApprovalStatus       VerificationStatus @default(PENDING)
   ratingAverage             Float              @default(5.0)
@@ -199,6 +200,8 @@ model Booking {
   commissionAmount     Float
   nurseEarningsAmount  Float
   tipAmount            Float         @default(0)
+  couponCode           String?
+  discountAmount       Float         @default(0)
   totalPatientAmount   Float
   
   status               BookingStatus @default(DRAFT)
@@ -334,4 +337,19 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([actorId])
+}
+
+model Coupon {
+  id                String    @id @default(uuid())
+  code              String    @unique // e.g. "SANGLI100"
+  description       String?   // e.g. "Flat ₹100 Off for Sangli Launch"
+  discountType      String    @default("FIXED") // FIXED or PERCENT
+  discountValue     Float     // e.g. 100 for FIXED, or 20 for 20%
+  minOrderAmount    Float     @default(0)
+  maxDiscountAmount Float?
+  isActive          Boolean   @default(true)
+  expiresAt         DateTime?
+  usageCount        Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }

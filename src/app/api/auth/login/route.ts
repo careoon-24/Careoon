@@ -14,8 +14,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    const identifier = (email || '').trim();
+
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier.toLowerCase() },
+          { phone: identifier },
+          { nurseProfile: { nurseCode: identifier.toUpperCase() } },
+        ],
+      },
       include: {
         nurseProfile: true,
       },
@@ -23,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'वापरकर्ता किंवा Nurse ID सापडला नाही / Invalid Email, Phone or Nurse ID' },
         { status: 401 }
       );
     }

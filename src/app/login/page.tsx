@@ -182,16 +182,16 @@ function LoginFormContent() {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Email Address
+                {activeTab === 'LOGIN' ? 'Mobile, Email, or Nurse ID (मोबाईल, ईमेल किंवा Nurse ID)' : 'Email Address (ईमेल)'}
               </label>
               <div className="relative">
                 <input
-                  type="email"
+                  type={activeTab === 'LOGIN' ? 'text' : 'email'}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all outline-none"
+                  placeholder={activeTab === 'LOGIN' ? 'e.g. 98220XXXXX or SANGLI-RN-7401' : 'name@example.com'}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all outline-none font-sans"
                 />
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               </div>

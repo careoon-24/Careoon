@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { getPatientProfileAction } from "@/actions/profile";
 import { createBookingAction } from "@/actions/bookings";
+import { validateCouponAction } from "@/actions/coupons";
 import {
   Calendar,
   Clock,
@@ -23,6 +24,9 @@ import {
   Phone,
   FileText,
   AlertCircle,
+  Ticket,
+  Tag,
+  Check,
 } from "lucide-react";
 
 export default function BookServicePage() {
@@ -61,6 +65,43 @@ export default function BookServicePage() {
   const [selectedNurseId, setSelectedNurseId] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  // Coupon State
+  const [couponInput, setCouponInput] = useState<string>("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponError, setCouponError] = useState<string>("");
+  const [couponSuccess, setCouponSuccess] = useState<string>("");
+  const [isCheckingCoupon, setIsCheckingCoupon] = useState<boolean>(false);
+
+  const handleApplyCoupon = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!couponInput.trim()) return;
+    setCouponError("");
+    setCouponSuccess("");
+    setIsCheckingCoupon(true);
+
+    try {
+      const res = await validateCouponAction(couponInput, service?.basePrice || 0);
+      if (res.valid) {
+        setAppliedCoupon(res);
+        setCouponSuccess(res.message || "कूपन सवलत लागू झाली!");
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(res.message || "अवैध कूपन कोड.");
+      }
+    } catch (err: any) {
+      setCouponError(err.message || "कूपन पडताळणी अयशस्वी झाली.");
+    } finally {
+      setIsCheckingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponSuccess("");
+    setCouponError("");
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -187,6 +228,7 @@ export default function BookServicePage() {
         patientContactPhone: patientPhone || userProfile?.phone || "+919822000000",
         patientName: `${patientName}${bookingRecipient === "FAMILY" ? ` (${familyRelationship})` : ""}`,
         patientNotes: clinicalNotes,
+        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       });
 
       if (res && res.bookingId) {
@@ -544,26 +586,174 @@ export default function BookServicePage() {
         )}
       </div>
 
-      {/* 4. SUBMIT ORDER BUTTON */}
-      <div className="p-5 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] text-teal-300 font-extrabold uppercase tracking-wider block">
-            Careoon 15-Minute Response Commitment
-          </span>
-          <p className="text-xs text-slate-300 mt-0.5">
-            Payment is collected only at your doorstep after sterile nursing care is delivered.
-          </p>
-        </div>
+      {/* 4. COUPON CODE & LIVE DOORSTEP PRICING */}
+      {(() => {
+        const baseRate = service?.basePrice || 0;
+        const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+        const finalPayable = Math.max(0, baseRate - discount);
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-8 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition flex items-center justify-center gap-2 shrink-0"
-        >
-          <span>{submitting ? "Confirming Visit..." : "Schedule Home Visit"}</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
+        return (
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-purple-700 block">
+                  Step 4: Promotional Coupon & Pricing (कूपन सवलत)
+                </span>
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
+                  Have a Promo Coupon? Apply for instant discount
+                </h2>
+              </div>
+              <Ticket className="w-5 h-5 text-purple-600" />
+            </div>
+
+            {/* Coupon Input Form */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="Enter Coupon Code (e.g. SANGLI100)"
+                    disabled={!!appliedCoupon}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono font-black text-xs uppercase focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-60"
+                  />
+                </div>
+
+                {appliedCoupon ? (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={isCheckingCoupon || !couponInput.trim()}
+                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-purple-600/20 active:scale-95 transition"
+                  >
+                    {isCheckingCoupon ? "Checking..." : "Apply (लागू करा)"}
+                  </button>
+                )}
+              </div>
+
+              {/* Sangli Launch Quick Hint */}
+              {!appliedCoupon && (
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                  <span>💡 Sangli Launch Offer:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCouponInput("SANGLI100");
+                      validateCouponAction("SANGLI100", service?.basePrice || 0).then((res) => {
+                        if (res.valid) {
+                          setAppliedCoupon(res);
+                          setCouponSuccess(res.message || "कूपन सवलत लागू झाली!");
+                        }
+                      });
+                    }}
+                    className="font-mono font-black text-purple-700 hover:underline bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200"
+                  >
+                    SANGLI100 (Flat ₹100 Off)
+                  </button>
+                </div>
+              )}
+
+              {/* Coupon Feedback Alerts */}
+              {couponSuccess && (
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{couponSuccess}</span>
+                </div>
+              )}
+
+              {couponError && (
+                <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{couponError}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Transparent Doorstep Price Breakdown */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Doorstep Procedure Rate ({service.name}):</span>
+                <span className="font-bold text-slate-900">{formatCurrency(baseRate)}</span>
+              </div>
+
+              {appliedCoupon && (
+                <div className="flex items-center justify-between text-emerald-700 font-bold">
+                  <span>Promo Discount ({appliedCoupon.code}):</span>
+                  <span>- {formatCurrency(discount)}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Sterile Clinical Kit & MNC Certified Nurse:</span>
+                <span className="text-emerald-700 font-bold">Included (मोफत)</span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-sm">
+                <div>
+                  <span className="font-black text-slate-900 block">Total Due at Doorstep</span>
+                  <span className="text-[10px] text-slate-400">Pay via Cash or UPI after service</span>
+                </div>
+                <div className="text-right">
+                  {appliedCoupon && (
+                    <span className="text-xs text-slate-400 line-through block font-medium">
+                      {formatCurrency(baseRate)}
+                    </span>
+                  )}
+                  <span className="text-lg font-black text-teal-700">
+                    {formatCurrency(finalPayable)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 5. SUBMIT ORDER BUTTON */}
+      {(() => {
+        const baseRate = service?.basePrice || 0;
+        const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+        const finalPayable = Math.max(0, baseRate - discount);
+
+        return (
+          <div className="p-5 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-teal-300 font-extrabold uppercase tracking-wider block">
+                  Sangli - Miraj Doorstep Care
+                </span>
+                {appliedCoupon && (
+                  <span className="text-[10px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-full font-bold">
+                    Coupon: {appliedCoupon.code} (-₹{discount})
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-slate-300 mt-0.5">
+                Total to Pay at Doorstep: <strong className="text-white text-sm">{formatCurrency(finalPayable)}</strong> (Cash/UPI)
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-8 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition flex items-center justify-center gap-2 shrink-0"
+            >
+              <span>{submitting ? "Confirming Visit..." : `Schedule Visit (${formatCurrency(finalPayable)})`}</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      })()}
     </form>
   );
 }

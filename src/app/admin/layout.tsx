@@ -32,9 +32,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       exact: true,
     },
     {
-      label: "Services & Commission",
+      label: "Services & Pricing",
       href: "/admin/services",
       icon: Layers,
+    },
+    {
+      label: "Coupons & Discounts",
+      href: "/admin/coupons",
+      icon: FileSpreadsheet,
     },
     {
       label: "Nurses & Privileges",

@@ -21,6 +21,7 @@ export async function createBookingAction(formData: {
   patientAge?: number;
   patientGender?: string;
   tipAmount?: number;
+  couponCode?: string;
 }) {
   const session = await getSession();
   if (!session) {
@@ -41,7 +42,39 @@ export async function createBookingAction(formData: {
   const commissionAmount = (basePrice * commissionPercent) / 100;
   const nurseEarnings = basePrice - commissionAmount;
   const tip = formData.tipAmount || 0;
-  const totalAmount = basePrice + tip;
+
+  // Coupon Discount Calculation
+  let discountAmount = 0;
+  let appliedCouponCode: string | null = null;
+
+  if (formData.couponCode && formData.couponCode.trim()) {
+    const cleanCode = formData.couponCode.trim().toUpperCase();
+    const coupon = await prisma.coupon.findUnique({
+      where: { code: cleanCode },
+    });
+
+    if (coupon && coupon.isActive && (!coupon.expiresAt || new Date(coupon.expiresAt) >= new Date())) {
+      if (basePrice >= coupon.minOrderAmount) {
+        if (coupon.discountType === 'PERCENT') {
+          discountAmount = Math.round((basePrice * coupon.discountValue) / 100);
+          if (coupon.maxDiscountAmount && discountAmount > coupon.maxDiscountAmount) {
+            discountAmount = coupon.maxDiscountAmount;
+          }
+        } else {
+          discountAmount = Math.min(coupon.discountValue, basePrice);
+        }
+        appliedCouponCode = coupon.code;
+
+        // Increment coupon usage
+        await prisma.coupon.update({
+          where: { id: coupon.id },
+          data: { usageCount: { increment: 1 } },
+        });
+      }
+    }
+  }
+
+  const totalAmount = Math.max(0, basePrice - discountAmount + tip);
 
   const bookingCode = `CRN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -55,10 +88,10 @@ export async function createBookingAction(formData: {
       durationMinutes: service.durationMinutes,
       addressLine: formData.addressLine,
       landmark: formData.landmark,
-      city: formData.city,
-      postalCode: formData.postalCode,
-      latitude: formData.latitude || 18.5204,
-      longitude: formData.longitude || 73.8567,
+      city: formData.city || 'Sangli',
+      postalCode: formData.postalCode || '416416',
+      latitude: formData.latitude || 16.8524,
+      longitude: formData.longitude || 74.5815,
       patientNotes: formData.patientNotes,
       patientContactPhone: formData.patientContactPhone,
       patientName: formData.patientName,
@@ -69,6 +102,8 @@ export async function createBookingAction(formData: {
       commissionAmount,
       nurseEarningsAmount: nurseEarnings,
       tipAmount: tip,
+      couponCode: appliedCouponCode,
+      discountAmount,
       totalPatientAmount: totalAmount,
       status: formData.nurseId ? 'NURSE_OFFERED' : 'SEARCHING_NURSE',
       paymentStatus: 'UNPAID',

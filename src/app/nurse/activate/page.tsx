@@ -2,166 +2,113 @@
 
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCareoon } from "@/context/CareoonContext";
-import { ShieldCheck, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import { nurseAccessLoginAction } from "@/actions/nurses";
+import { ShieldCheck, CheckCircle2, AlertCircle, ArrowRight, KeyRound } from "lucide-react";
 
 function NurseActivationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tokenFromUrl = searchParams.get("token") || "";
+  const codeFromUrl = searchParams.get("code") || "";
 
-  const { invitations, claimNurseInvitation } = useCareoon();
-
-  const [token, setToken] = useState<string>(tokenFromUrl);
-  const [fullName, setFullName] = useState<string>("");
-  const [phone, setPhone] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [nurseCode, setNurseCode] = useState<string>(codeFromUrl);
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
 
-  const matchedInvite = invitations.find((i) => i.token === token && !i.isClaimed);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleNurseCodeLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!token.trim()) {
-      setError("Please provide an invitation token.");
+    if (!nurseCode.trim()) {
+      setError("कृपया तुमचा Nurse ID टाका / Please enter your Nurse ID.");
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    const res = claimNurseInvitation(token, fullName, phone);
-    if (res.success) {
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/nurse");
-      }, 1500);
-    } else {
-      setError(res.error || "Failed to activate account.");
+    setLoading(true);
+    try {
+      const res = await nurseAccessLoginAction(nurseCode.trim());
+      if (res.success && res.redirectUrl) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push(res.redirectUrl);
+          router.refresh();
+        }, 1200);
+      } else {
+        setError(res.error || "वैध Nurse ID आढळला नाही.");
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setError(err.message || "Login failed.");
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto w-full py-8 px-4 space-y-4">
+    <div className="max-w-md mx-auto w-full py-12 px-4 space-y-5">
       <div className="text-center space-y-1">
-        <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center mx-auto mb-2 shadow-xs">
+        <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center mx-auto mb-3 shadow-md shadow-teal-600/20">
           <ShieldCheck className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
-          Activate Nurse Account
+        <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+          Nurse Dashboard Access
         </h1>
-        <p className="text-xs text-zinc-500">
-          Enter your secure invitation credentials and set your private password.
+        <p className="text-xs text-slate-500">
+          Sangli - Miraj Verified Healthcare Network
         </p>
       </div>
 
       {success ? (
-        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center space-y-2">
-          <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-          <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Account Activated!</h2>
-          <p className="text-xs text-zinc-500">Redirecting to your nurse dashboard...</p>
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-3 shadow-xl">
+          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
+          <h2 className="text-base font-extrabold text-slate-900">Nurse ID Verified!</h2>
+          <p className="text-xs text-slate-500">Opening your Sangli clinical dashboard...</p>
         </div>
       ) : (
         <form
-          onSubmit={handleSubmit}
-          className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3.5 shadow-xs"
+          onSubmit={handleNurseCodeLogin}
+          className="p-6 rounded-3xl bg-white border border-slate-200 space-y-4 shadow-xl text-xs"
         >
           <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              One-Time Invitation Token
+            <label className="font-bold text-slate-700 block">
+              Enter Your Nurse ID / Access Code (Nurse ID कोड टाका) *
             </label>
-            <input
-              type="text"
-              required
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="e.g. tok_..."
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-mono outline-hidden"
-            />
+            <p className="text-[11px] text-slate-400">
+              Admin ने जनरेट केलेला युनिक कोड (उदा. SANGLI-RN-7401)
+            </p>
+            <div className="relative mt-2">
+              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                required
+                value={nurseCode}
+                onChange={(e) => setNurseCode(e.target.value.toUpperCase())}
+                placeholder="SANGLI-RN-XXXX"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-black text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
           </div>
 
-          {matchedInvite && (
-            <div className="p-2.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-[11px] text-teal-800 dark:text-teal-300">
-              Verified Invitation for: <strong>{matchedInvite.fullName}</strong> ({matchedInvite.email})
+          {error && (
+            <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+              <span>{error}</span>
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Confirm Full Name
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Marcus Vance, RN"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Phone Number
-            </label>
-            <input
-              type="text"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Set Private Password (Never shared)
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimum 8 characters"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter password"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-            />
-          </div>
-
-          {error && <p className="text-xs text-rose-600">{error}</p>}
-
           <button
             type="submit"
-            className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs shadow-md shadow-teal-600/25 active:scale-95 transition flex items-center justify-center gap-2"
           >
-            <span>Activate Account & Log In</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>{loading ? "Verifying Access ID..." : "Open Nurse Dashboard"}</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
+
+          <div className="pt-2 border-t border-slate-100 text-center">
+            <span className="text-[11px] text-slate-400">
+              New nurse? Contact Admin to get your Sangli Medical verification and Access ID.
+            </span>
+          </div>
         </form>
       )}
     </div>
@@ -170,7 +117,13 @@ function NurseActivationContent() {
 
 export default function NurseActivationPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-zinc-400">Loading activation...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-teal-600 border-t-transparent animate-spin" />
+        </div>
+      }
+    >
       <NurseActivationContent />
     </Suspense>
   );
