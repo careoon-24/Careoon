@@ -17,6 +17,12 @@ import { useCareoon } from "@/context/CareoonContext";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  // If on admin login page, render clean children without admin sidebar
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
   const { offers, bookings, payments } = useCareoon();
 
   const pendingOffersCount = offers.filter((o) => o.status === "pending").length;

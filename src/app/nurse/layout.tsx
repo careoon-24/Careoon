@@ -8,6 +8,12 @@ import { useCareoon } from "@/context/CareoonContext";
 
 export default function NurseLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  // If on nurse login or activate page, render clean children without nurse dashboard wrapper
+  if (pathname === '/nurse/login' || pathname === '/nurse/activate') {
+    return <>{children}</>;
+  }
+
   const { offers, getCurrentNurseProfile, currentUser } = useCareoon();
 
   const nurseProfile = getCurrentNurseProfile();

@@ -115,7 +115,7 @@ export default function AdminNursesPage() {
   };
 
   const copyActivationLink = () => {
-    const link = `${window.location.origin}/nurse/activate`;
+    const link = `${window.location.origin}/nurse/login`;
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);

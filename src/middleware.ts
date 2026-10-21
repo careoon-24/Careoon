@@ -17,6 +17,16 @@ interface SessionPayload {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Allow dedicated login / activation pages without authentication check
+  const isExcludedLoginPath =
+    pathname === '/admin/login' ||
+    pathname === '/nurse/login' ||
+    pathname === '/nurse/activate';
+
+  if (isExcludedLoginPath) {
+    return NextResponse.next();
+  }
+
   // Protected route paths
   const isAdminPath = pathname.startsWith('/admin');
   const isNursePath = pathname.startsWith('/nurse');
@@ -25,15 +35,20 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/patient/profile') ||
     pathname.startsWith('/patient/book');
 
-  // Allow all static files, public landing, public services browsing, auth APIs
+  // Allow all public static files, landing page, public services browsing
   if (!isAdminPath && !isNursePath && !isPatientPrivatePath) {
     return NextResponse.next();
   }
 
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
 
+  // Dedicated redirects per portal role
   if (!token) {
-    const loginUrl = new URL('/login', req.url);
+    let targetLogin = '/login';
+    if (isAdminPath) targetLogin = '/admin/login';
+    else if (isNursePath) targetLogin = '/nurse/login';
+
+    const loginUrl = new URL(targetLogin, req.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -61,7 +76,11 @@ export async function middleware(req: NextRequest) {
   } catch (err) {
     // Invalid/expired token
     console.error('Middleware JWT error:', err);
-    const loginUrl = new URL('/login', req.url);
+    let targetLogin = '/login';
+    if (isAdminPath) targetLogin = '/admin/login';
+    else if (isNursePath) targetLogin = '/nurse/login';
+
+    const loginUrl = new URL(targetLogin, req.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
