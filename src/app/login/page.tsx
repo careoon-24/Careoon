@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Lock, Mail, ArrowRight, AlertCircle, Phone, User } from 'lucide-react';
+import { HeartPulse, Lock, Mail, ArrowRight, AlertCircle, Phone, User, ShieldCheck, MapPin } from 'lucide-react';
 
 function LoginFormContent() {
   const router = useRouter();
@@ -64,39 +64,56 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-teal-50/20 to-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link href="/" className="inline-flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-600/30">
-            <Heart className="w-5 h-5 fill-white" />
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background ambient medical glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-teal-100/50 via-emerald-50/30 to-transparent pointer-events-none -z-10" />
+      <div className="absolute -top-32 -right-32 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+      {/* Brand Header */}
+      <div className="w-full max-w-md text-center mb-6">
+        <Link href="/" className="inline-flex items-center gap-2.5 group mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-700 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-600/25 group-hover:scale-105 transition-transform">
+            <HeartPulse className="w-6 h-6" />
           </div>
-          <span className="text-2xl font-black tracking-tight text-slate-900">Careoon</span>
+          <div className="text-left">
+            <span className="text-2xl font-black tracking-tight text-slate-900 block leading-tight">Careoon</span>
+            <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider block">Home Nursing Care</span>
+          </div>
         </Link>
-        <h2 className="text-xl font-bold tracking-tight text-slate-900">
-          {activeTab === 'LOGIN' ? 'Welcome Back' : 'Create Your Patient Account'}
-        </h2>
-        <p className="mt-1 text-xs text-slate-500">
+
+        {/* Exclusive Launch Location Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-800 text-[11px] font-bold mb-3 shadow-xs">
+          <MapPin className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+          <span>Sangli - Miraj Official Healthcare Network</span>
+        </div>
+
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          {activeTab === 'LOGIN' ? 'Sign In to Your Account' : 'Create Your Patient Account'}
+        </h1>
+        <p className="mt-1 text-xs text-slate-600 font-medium">
           {activeTab === 'LOGIN'
-            ? 'Sign in to manage your home nursing bookings & health reports'
-            : 'Register in seconds to book verified nurses at your doorstep'}
+            ? 'Access your home procedure bookings, nurse live tracking, and clinical vitals'
+            : 'Register in seconds to book verified, MNC-certified nurses at your doorstep'}
         </p>
       </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white/80 backdrop-blur-xl py-8 px-6 shadow-xl shadow-slate-200/60 rounded-3xl border border-white/60 sm:px-10">
+      {/* Main Authentication Card */}
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-900/5 p-6 sm:p-8">
           
-          {/* Tab selector */}
-          <div className="flex p-1 bg-slate-100 rounded-2xl mb-6">
+          {/* Tab Selector */}
+          <div className="flex p-1 bg-slate-100/90 rounded-2xl mb-6 border border-slate-200/60">
             <button
               type="button"
               onClick={() => {
                 setActiveTab('LOGIN');
                 setError(null);
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 ${
                 activeTab === 'LOGIN'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white text-teal-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Sign In
@@ -107,19 +124,19 @@ function LoginFormContent() {
                 setActiveTab('REGISTER');
                 setError(null);
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 ${
                 activeTab === 'REGISTER'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white text-teal-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              New Account
+              New Patient Account
             </button>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2 text-xs text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2.5 text-xs text-red-700 font-semibold">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
           )}
@@ -128,39 +145,45 @@ function LoginFormContent() {
             {activeTab === 'REGISTER' && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Full Name (रुग्णाचे नाव)
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. Ramesh Kulkarni"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                      placeholder="e.g. Anand Kulkarni"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all outline-none"
                     />
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mobile Phone</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Mobile Phone (मोबाईल नंबर)
+                  </label>
                   <div className="relative">
                     <input
                       type="tel"
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+91 9876543210"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                      placeholder="+91 98220 12345"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all outline-none"
                     />
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   </div>
                 </div>
               </>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Email Address
+              </label>
               <div className="relative">
                 <input
                   type="email"
@@ -168,14 +191,16 @@ function LoginFormContent() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all outline-none"
                 />
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type="password"
@@ -183,32 +208,48 @@ function LoginFormContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white focus:bg-white focus:border-teal-600 focus:ring-4 focus:ring-teal-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all outline-none"
                 />
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.99] transition shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              className="w-full mt-2 py-3.5 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.99] transition-all shadow-md shadow-teal-600/25 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
             >
               {loading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{activeTab === 'LOGIN' ? 'Sign In' : 'Create Free Account'}</span>
+                  <span>{activeTab === 'LOGIN' ? 'Sign In to Account' : 'Create Free Account'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
+
+          {/* Clinical trust badges */}
+          <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              <span>100% MNC Verified</span>
+            </div>
+            <span>•</span>
+            <div>Sangli & Miraj Care</div>
+            <span>•</span>
+            <div>Zero Advance Fee</div>
+          </div>
         </div>
 
+        {/* Back Link */}
         <div className="mt-6 text-center">
-          <Link href="/" className="text-xs text-slate-400 hover:text-slate-600 transition">
-            ← Back to Home Care Services
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-teal-700 transition"
+          >
+            <span>← Return to Home Care Services</span>
           </Link>
         </div>
       </div>
@@ -229,3 +270,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

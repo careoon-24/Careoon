@@ -63,19 +63,19 @@ export default function PatientSupportPage() {
       )}
 
       {/* New Support Form */}
-      <form onSubmit={handleSubmit} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3.5 shadow-xs">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+      <form onSubmit={handleSubmit} className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-3.5 shadow-xs">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-teal-700">
           File a Care Ticket
         </h2>
 
         <div className="space-y-1">
-          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="text-[11px] font-bold text-slate-700">
             Related Booking (Optional)
           </label>
           <select
             value={bookingId}
             onChange={(e) => setBookingId(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+            className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs outline-none"
           >
             <option value="">General Inquiry / No specific booking</option>
             {patientBookings.map((b) => (
@@ -87,13 +87,13 @@ export default function PatientSupportPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="text-[11px] font-bold text-slate-700">
             Category
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as TicketCategory)}
-            className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+            className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs outline-none"
           >
             <option value="clinical_concern">Clinical Concern / Medication Question</option>
             <option value="no_show">Nurse No-Show or Late Arrival</option>
@@ -104,7 +104,7 @@ export default function PatientSupportPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="text-[11px] font-bold text-slate-700">
             Subject
           </label>
           <input
@@ -113,12 +113,12 @@ export default function PatientSupportPage() {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="e.g. Question regarding IV dressing aftercare"
-            className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+            className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs outline-none"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="text-[11px] font-bold text-slate-700">
             Detailed Description
           </label>
           <textarea
@@ -127,7 +127,7 @@ export default function PatientSupportPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the situation in detail so our supervisory RN can assist immediately."
-            className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+            className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs outline-none"
           />
         </div>
 
@@ -135,10 +135,10 @@ export default function PatientSupportPage() {
 
         <button
           type="submit"
-          className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs"
+          className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition"
         >
           <Send className="w-3.5 h-3.5" />
-          Submit Ticket
+          <span>Submit Support Ticket</span>
         </button>
       </form>
 

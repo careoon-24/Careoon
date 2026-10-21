@@ -41,10 +41,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-teal-500 selection:text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-teal-500 selection:text-white`}
       >
         <CareoonProvider>
-          <Suspense fallback={<div className="h-14 border-b bg-white dark:bg-zinc-900" />}>
+          <Suspense fallback={<div className="h-16 border-b border-slate-200 bg-white" />}>
             <Header />
             <main className="flex-1 flex flex-col">{children}</main>
           </Suspense>
