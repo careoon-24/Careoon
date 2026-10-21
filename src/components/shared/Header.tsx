@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { HeartPulse, User, LogOut, LogIn } from "lucide-react";
 
 interface UserProfile {
@@ -14,7 +14,17 @@ interface UserProfile {
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<UserProfile | null>(null);
+
+  // Do not render patient header on admin, nurse, or login routes
+  if (
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/nurse") ||
+    pathname?.startsWith("/login")
+  ) {
+    return null;
+  }
 
   useEffect(() => {
     fetch("/api/auth/me")
