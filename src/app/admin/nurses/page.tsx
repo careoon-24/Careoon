@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useCareoon } from "@/context/CareoonContext";
-import { NurseProfile, QualificationStatus } from "@/types";
+import React, { useState, useEffect } from "react";
+import { verifyNurseAction } from "@/actions/nurses";
 import {
   Users,
   ShieldCheck,
@@ -15,379 +14,271 @@ import {
   Link as LinkIcon,
   X,
   ExternalLink,
+  RefreshCw,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 
 export default function AdminNursesPage() {
-  const {
-    nurseProfiles,
-    users,
-    services,
-    nurseQualifications,
-    invitations,
-    adminVerifyNurse,
-    adminToggleNurseQualification,
-    adminInviteNurse,
-  } = useCareoon();
-
+  const [nurses, setNurses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [selectedNurseForPrivileges, setSelectedNurseForPrivileges] = useState<NurseProfile | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
-  // Invite Form State
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [invitePhone, setInvitePhone] = useState("");
-  const [inviteLicense, setInviteLicense] = useState("");
-  const [inviteAreas, setInviteAreas] = useState("10001, 10002, 10003");
-  const [inviteResult, setInviteResult] = useState<any>(null);
-  const [copiedToken, setCopiedToken] = useState(false);
-
-  const handleSendInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    const areas = inviteAreas.split(",").map((s) => s.trim()).filter(Boolean);
-    const res = adminInviteNurse(inviteName, inviteEmail, invitePhone, inviteLicense, areas);
-    if (res.success && res.invitation) {
-      setInviteResult(res.invitation);
+  const loadNurses = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/nurses?all=true");
+      const data = await res.json();
+      if (data.success && data.nurses) {
+        setNurses(data.nurses);
+      }
+    } catch (err) {
+      console.error("Failed to load nurses:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const copyInviteLink = (token: string) => {
-    const link = `${window.location.origin}/nurse/activate?token=${token}`;
-    navigator.clipboard.writeText(link);
-    setCopiedToken(true);
-    setTimeout(() => setCopiedToken(false), 2500);
+  useEffect(() => {
+    loadNurses();
+  }, []);
+
+  const handleVerify = async (nurseProfileId: string) => {
+    setVerifyingId(nurseProfileId);
+    try {
+      await verifyNurseAction(nurseProfileId);
+      await loadNurses();
+    } catch (err: any) {
+      alert("Verification failed: " + err.message);
+    } finally {
+      setVerifyingId(null);
+    }
   };
 
+  const copyActivationLink = () => {
+    const link = `${window.location.origin}/nurse/activate`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const verifiedNurses = nurses.filter((n) => n.adminApprovalStatus === "VERIFIED");
+  const pendingNurses = nurses.filter((n) => n.adminApprovalStatus !== "VERIFIED");
+
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl pb-16">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-            Nurse Credentials & Clinical Privileges
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
-            Invite licensed RNs via one-time tokens, verify state registries, and assign procedure qualifications.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              Verified Nurse Network & Licensing
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-200">
+              Live Neon DB
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Audit nursing council registrations, police verifications, and approve clinical healthcare providers.
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setInviteResult(null);
-            setIsInviteModalOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition-all shrink-0"
-        >
-          <UserPlus className="w-4 h-4" />
-          Invite Registered Nurse
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={copyActivationLink}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition"
+          >
+            <LinkIcon className="w-4 h-4 text-teal-600" />
+            <span>{copiedLink ? "Link Copied!" : "Copy Nurse Invite Link"}</span>
+          </button>
+
+          <button
+            onClick={loadNurses}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* Nurses Directory */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {nurseProfiles.map((nurse) => {
-          const user = users.find((u) => u.id === nurse.userId);
-          const approvedCount = nurseQualifications.filter(
-            (q) => q.nurseId === nurse.id && q.isApproved
-          ).length;
+      {/* Summary KPI Badges */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+              Total Applicants
+            </span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white mt-1 block">
+              {nurses.length}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
 
-          return (
-            <div
-              key={nurse.id}
-              className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3 flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm text-zinc-900 dark:text-white">
-                      {user?.fullName || "Nurse"}
-                    </h3>
-                    <p className="text-[11px] font-mono text-zinc-400">
-                      License: {nurse.licenseNumber}
-                    </p>
+        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-emerald-600 block tracking-wider">
+              Verified & Active
+            </span>
+            <span className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1 block">
+              {verifiedNurses.length}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-amber-600 block tracking-wider">
+              Pending Verification
+            </span>
+            <span className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1 block">
+              {pendingNurses.length}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <Clock className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Pending Approval Section */}
+      {pendingNurses.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+            <h2 className="text-sm font-black uppercase tracking-wider text-amber-900 dark:text-amber-200">
+              Action Required: Pending Medical Licenses ({pendingNurses.length})
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendingNurses.map((nurse) => (
+              <div
+                key={nurse.id}
+                className="p-5 rounded-3xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 shadow-xs space-y-4 flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                        {nurse.user?.fullName}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">{nurse.user?.email} • {nurse.user?.phone}</p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                      Pending
+                    </span>
                   </div>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      nurse.qualificationStatus === "verified"
-                        ? "bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"
-                        : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                    }`}
-                  >
-                    {nurse.qualificationStatus.toUpperCase()}
+
+                  <div className="p-3 rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-amber-100 text-xs space-y-1">
+                    <div className="text-[11px] text-slate-500 font-semibold">
+                      MNC / Registration No: <strong className="text-slate-900 dark:text-white font-mono">{nurse.registrationNumber}</strong>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Experience: <strong className="text-slate-900 dark:text-white">{nurse.experienceYears} Years</strong>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Qualifications: <strong className="text-slate-900 dark:text-white">{nurse.qualifications}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleVerify(nurse.id)}
+                  disabled={verifyingId === nurse.id}
+                  className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-95 transition flex items-center justify-center gap-1.5"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{verifyingId === nurse.id ? "Verifying..." : "Approve & Verify License"}</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Verified Nurses Directory */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+          Verified Clinical Providers ({verifiedNurses.length})
+        </h2>
+
+        {verifiedNurses.length === 0 ? (
+          <div className="text-center py-16 px-4 bg-white dark:bg-zinc-900 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 shadow-xs space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-600 flex items-center justify-center mx-auto">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h4 className="font-bold text-base text-slate-800 dark:text-slate-200">
+              Zero Verified Nurses in Database
+            </h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+              Your database has 0 verified nurses. Share the private invitation link with certified nurses to start onboarding.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={copyActivationLink}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy Private Onboarding Link</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {verifiedNurses.map((nurse) => (
+              <div
+                key={nurse.id}
+                className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs space-y-3 flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                        {nurse.user?.fullName}
+                        <ShieldCheck className="w-4 h-4 text-teal-500" />
+                      </h4>
+                      <p className="text-[11px] text-slate-400">{nurse.user?.email} • {nurse.user?.phone}</p>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Verified
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800 text-xs space-y-1">
+                    <div className="text-[11px] text-slate-500">
+                      License: <strong className="text-slate-900 dark:text-white font-mono">{nurse.registrationNumber}</strong>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Experience: <strong className="text-slate-900 dark:text-white">{nurse.experienceYears} Years</strong>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Qualifications: <strong className="text-slate-900 dark:text-white">{nurse.qualifications}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-slate-400">Rating Average</span>
+                  <span className="font-black text-amber-500 flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    {nurse.ratingAverage ? Number(nurse.ratingAverage).toFixed(1) : "5.0"}
                   </span>
                 </div>
-
-                <div className="grid grid-cols-3 gap-1 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 text-center text-xs">
-                  <div>
-                    <div className="text-[10px] text-zinc-400">Visits</div>
-                    <div className="font-extrabold text-zinc-800 dark:text-zinc-200">
-                      {nurse.completedBookingsCount}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-zinc-400">Rating</div>
-                    <div className="font-extrabold text-amber-500 flex items-center justify-center gap-0.5">
-                      <Star className="w-3 h-3 fill-amber-400" />
-                      {nurse.ratingAverage.toFixed(1)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-zinc-400">Privileges</div>
-                    <div className="font-extrabold text-purple-600">
-                      {approvedCount}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[11px] text-zinc-500">
-                  <span className="font-semibold">Coverage:</span> Zip {nurse.serviceAreas.join(", ")}
-                </div>
               </div>
-
-              {/* Actions */}
-              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs">
-                <button
-                  onClick={() =>
-                    adminVerifyNurse(
-                      nurse.id,
-                      nurse.qualificationStatus === "verified" ? "unverified" : "verified"
-                    )
-                  }
-                  className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 font-semibold underline text-[11px]"
-                >
-                  {nurse.qualificationStatus === "verified" ? "Revoke Verification" : "Mark Verified"}
-                </button>
-
-                <button
-                  onClick={() => setSelectedNurseForPrivileges(nurse)}
-                  className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-200 font-bold text-[11px] transition-colors"
-                >
-                  Manage Privileges ({approvedCount})
-                </button>
-              </div>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Privileges Modal */}
-      {selectedNurseForPrivileges && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <div>
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                  Clinical Procedure Privileges
-                </h3>
-                <p className="text-[11px] text-zinc-500">
-                  Select which services this nurse is certified and approved to perform.
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedNurseForPrivileges(null)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-              {services.map((service) => {
-                const isApproved = nurseQualifications.some(
-                  (q) =>
-                    q.nurseId === selectedNurseForPrivileges.id &&
-                    q.serviceId === service.id &&
-                    q.isApproved
-                );
-
-                return (
-                  <label
-                    key={service.id}
-                    className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center justify-between text-xs cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                  >
-                    <div>
-                      <div className="font-semibold text-zinc-900 dark:text-white">
-                        {service.name}
-                      </div>
-                      <div className="text-[10px] text-zinc-400">
-                        Duration: {service.durationMinutes}m • Base: ${service.basePrice}
-                      </div>
-                    </div>
-
-                    <input
-                      type="checkbox"
-                      checked={isApproved}
-                      onChange={(e) =>
-                        adminToggleNurseQualification(
-                          selectedNurseForPrivileges.id,
-                          service.id,
-                          e.target.checked
-                        )
-                      }
-                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                    />
-                  </label>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setSelectedNurseForPrivileges(null)}
-              className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold text-xs"
-            >
-              Done & Save Privileges
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Invite Modal */}
-      {isInviteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <h2 className="text-sm font-bold text-zinc-900 dark:text-white">
-                Invite Registered Nurse (No Shared Passwords)
-              </h2>
-              <button
-                onClick={() => setIsInviteModalOpen(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {inviteResult ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    Invitation Dispatched
-                  </div>
-                  <p className="text-[11px]">
-                    A secure 72-hour one-time activation token has been generated. The nurse will set their own private password.
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-zinc-400">
-                    Activation Link & Token
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={`${window.location.origin}/nurse/activate?token=${inviteResult.token}`}
-                      className="w-full px-2.5 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-mono text-zinc-600 dark:text-zinc-300 border outline-hidden"
-                    />
-                    <button
-                      onClick={() => copyInviteLink(inviteResult.token)}
-                      className="px-3 py-2 rounded-lg bg-teal-600 text-white font-bold text-xs shrink-0 flex items-center gap-1"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      {copiedToken ? "Copied!" : "Copy"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    onClick={() => setIsInviteModalOpen(false)}
-                    className="w-full py-2.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-xs"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSendInvite} className="space-y-3 text-xs">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Full Nurse Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    placeholder="e.g. Rebecca Taylor, RN"
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 outline-hidden"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="rebecca.nurse@careoon.health"
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 outline-hidden"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={invitePhone}
-                    onChange={(e) => setInvitePhone(e.target.value)}
-                    placeholder="+1 (555) 902-1234"
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 outline-hidden"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    State Nursing License Number
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={inviteLicense}
-                    onChange={(e) => setInviteLicense(e.target.value)}
-                    placeholder="RN-NY-102948"
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 outline-hidden"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    Covered Postal Codes
-                  </label>
-                  <input
-                    type="text"
-                    value={inviteAreas}
-                    onChange={(e) => setInviteAreas(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 outline-hidden"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsInviteModalOpen(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs"
-                  >
-                    Generate Invite Link
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

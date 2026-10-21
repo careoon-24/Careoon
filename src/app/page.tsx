@@ -33,6 +33,7 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [nurses, setNurses] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('Pune');
@@ -64,6 +65,16 @@ export default function HomePage() {
             }))
           );
           setServices(allServices);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch real verified nurses
+    fetch('/api/nurses')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.nurses) {
+          setNurses(data.nurses);
         }
       })
       .catch(() => {});
@@ -268,10 +279,25 @@ export default function HomePage() {
         </div>
 
         {filteredServices.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-slate-200">
-            <Stethoscope className="w-10 h-10 mx-auto text-slate-400 mb-2" />
-            <p className="text-sm font-bold text-slate-700">No procedures found.</p>
-            <p className="text-xs text-slate-400">Try adjusting your search or selecting all categories.</p>
+          <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-200/90 shadow-xs space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
+              <Stethoscope className="w-6 h-6" />
+            </div>
+            <h4 className="text-base font-extrabold text-slate-800">No Clinical Procedures Published Yet</h4>
+            <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+              Careoon operates with verified hospital-standard services. The platform administrator can configure clinical procedures, aseptic protocols, and pricing in the Admin Operations Console.
+            </p>
+            {currentUser?.role === 'ADMIN' && (
+              <div className="pt-2">
+                <Link
+                  href="/admin/services"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition"
+                >
+                  <span>Configure Services in Admin</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -341,7 +367,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* 5. VERIFIED NURSES SPOTLIGHT (Responsive 3-Column Grid) */}
+      {/* 5. VERIFIED NURSES SPOTLIGHT (Dynamic Real-Time Data from DB) */}
       <div className="max-w-6xl mx-auto px-4 pt-10">
         <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -357,73 +383,72 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-sm">
-                  PK
-                </div>
-                <div>
-                  <div className="text-sm font-bold flex items-center gap-1">
-                    Pooja Kulkarni, RN
-                    <ShieldCheck className="w-4 h-4 text-teal-400" />
-                  </div>
-                  <div className="text-[11px] text-slate-400">B.Sc. Nursing • 6 yrs Hospital ICU Exp</div>
-                </div>
+          {nurses.length === 0 ? (
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/10 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center mx-auto">
+                <ShieldCheck className="w-6 h-6 text-teal-400" />
               </div>
-              <p className="text-xs text-slate-300 line-clamp-2">
-                Specialized in aseptic surgical wound dressings and critical care. Maharashtra Nursing Council verified.
+              <h4 className="text-base font-bold text-white">0 Registered Nurses in Current Area</h4>
+              <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
+                Careoon maintains a 100% verified network. All home nurses must hold active state nursing council credentials, sterile clinical procedure experience, and police clearance.
               </p>
-              <div className="text-xs text-amber-300 font-bold flex items-center gap-1 pt-1 border-t border-white/10">
-                <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                4.9 / 5.0 (38 patient reviews)
+              <div className="pt-2">
+                <Link
+                  href="/nurse/activate"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs transition shadow-lg shadow-teal-500/20 active:scale-95"
+                >
+                  <span>Apply as Verified Nurse</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {nurses.map((nurse) => {
+                const name = nurse.user?.fullName || 'Verified Nurse';
+                const initials = name
+                  .split(' ')
+                  .map((n: string) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase();
+                const qual = Array.isArray(nurse.qualifications)
+                  ? nurse.qualifications.join(', ')
+                  : nurse.qualifications || 'Certified RN';
+                const rating = nurse.ratingAverage ? Number(nurse.ratingAverage).toFixed(1) : '5.0';
+                const reviewsCount = nurse.reviews?.length || nurse.ratingCount || 0;
 
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-sm">
-                  MP
-                </div>
-                <div>
-                  <div className="text-sm font-bold flex items-center gap-1">
-                    Maya Patel, RN
-                    <ShieldCheck className="w-4 h-4 text-teal-400" />
+                return (
+                  <div
+                    key={nurse.id}
+                    className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 space-y-2 hover:border-teal-400/50 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-sm">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold flex items-center gap-1">
+                          {name}, RN
+                          <ShieldCheck className="w-4 h-4 text-teal-400" />
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          {qual} • {nurse.experienceYears || 1} yrs Clinical Exp
+                        </div>
+                      </div>
+                    </div>
+                    {nurse.bio && (
+                      <p className="text-xs text-slate-300 line-clamp-2">{nurse.bio}</p>
+                    )}
+                    <div className="text-xs text-amber-300 font-bold flex items-center gap-1 pt-1 border-t border-white/10">
+                      <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                      {rating} / 5.0 ({reviewsCount} patient reviews)
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-400">G.N.M. Geriatric Specialist • 8 yrs Exp</div>
-                </div>
-              </div>
-              <p className="text-xs text-slate-300 line-clamp-2">
-                Compassionate bedridden patient catheterization, vitals surveillance, and IV fluid medication.
-              </p>
-              <div className="text-xs text-amber-300 font-bold flex items-center gap-1 pt-1 border-t border-white/10">
-                <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                4.95 / 5.0 (64 patient reviews)
-              </div>
+                );
+              })}
             </div>
-
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-sm">
-                  AS
-                </div>
-                <div>
-                  <div className="text-sm font-bold flex items-center gap-1">
-                    Anita Shinde, RN
-                    <ShieldCheck className="w-4 h-4 text-teal-400" />
-                  </div>
-                  <div className="text-[11px] text-slate-400">B.Sc. Nursing • 4 yrs Clinical Exp</div>
-                </div>
-              </div>
-              <p className="text-xs text-slate-300 line-clamp-2">
-                Specialized in sterile surgical suture checks, pediatric monitoring, and IV cannulation.
-              </p>
-              <div className="text-xs text-amber-300 font-bold flex items-center gap-1 pt-1 border-t border-white/10">
-                <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                4.85 / 5.0 (22 patient reviews)
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

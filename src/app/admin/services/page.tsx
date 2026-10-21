@@ -1,80 +1,112 @@
 "use client";
 
-import React, { useState } from "react";
-import { useCareoon } from "@/context/CareoonContext";
-import { Service } from "@/types";
+import React, { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/utils";
+import {
+  adminCreateServiceAction,
+  adminUpdateServiceAction,
+  adminDeleteServiceAction,
+  adminToggleServiceAction,
+  adminCreateCategoryAction,
+} from "@/actions/services";
 import {
   Plus,
   Layers,
   Edit2,
   Clock,
-  DollarSign,
   Percent,
   CheckCircle2,
   AlertCircle,
-  MapPin,
   X,
   ShieldCheck,
+  Trash2,
+  FolderPlus,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 
 export default function AdminServicesPage() {
-  const {
-    services,
-    categories,
-    adminSaveService,
-    adminToggleServiceStatus,
-    bookings,
-  } = useCareoon();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Service Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingService, setEditingService] = useState<any | null>(null);
+
+  // Category Modal State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
+  const [newCatName, setNewCatName] = useState<string>("");
+  const [newCatDesc, setNewCatDesc] = useState<string>("");
 
   // Form State
   const [name, setName] = useState<string>("");
-  const [categoryId, setCategoryId] = useState<string>(categories[0]?.id || "");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [basePrice, setBasePrice] = useState<number>(120);
-  const [durationMinutes, setDurationMinutes] = useState<number>(60);
-  const [commissionPercentage, setCommissionPercentage] = useState<number>(20.0);
-  const [serviceAreasStr, setServiceAreasStr] = useState<string>("10001, 10002, 10003, 10004");
-  const [eligibilityStr, setEligibilityStr] = useState<string>(
-    "Requires physician prescription or hospital discharge summary"
-  );
+  const [basePrice, setBasePrice] = useState<number>(750);
+  const [durationMinutes, setDurationMinutes] = useState<number>(45);
+  const [commissionPercentage, setCommissionPercentage] = useState<number>(15.0);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>("");
   const [formSuccess, setFormSuccess] = useState<string>("");
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/services");
+      const data = await res.json();
+      if (data.success && data.categories) {
+        setCategories(data.categories);
+        const all = data.categories.flatMap((cat: any) =>
+          (cat.services || []).map((s: any) => ({
+            ...s,
+            categoryName: cat.name,
+            categoryId: cat.id,
+          }))
+        );
+        setServices(all);
+        if (data.categories.length > 0 && !categoryId) {
+          setCategoryId(data.categories[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load services:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const openCreateModal = () => {
     setEditingService(null);
     setName("");
     setCategoryId(categories[0]?.id || "");
     setDescription("");
-    setBasePrice(100);
-    setDurationMinutes(60);
-    setCommissionPercentage(20.0);
-    setServiceAreasStr("10001, 10002, 10003, 10004");
-    setEligibilityStr("Requires active clinical doctor prescription");
+    setBasePrice(750);
+    setDurationMinutes(45);
+    setCommissionPercentage(15.0);
     setFormError("");
     setFormSuccess("");
     setIsModalOpen(true);
   };
 
-  const openEditModal = (service: Service) => {
+  const openEditModal = (service: any) => {
     setEditingService(service);
     setName(service.name);
     setCategoryId(service.categoryId);
     setDescription(service.description);
     setBasePrice(service.basePrice);
     setDurationMinutes(service.durationMinutes);
-    setCommissionPercentage(service.commissionPercentage);
-    setServiceAreasStr(service.serviceAreas.join(", "));
-    setEligibilityStr(service.eligibilityConditions.join("\n"));
+    setCommissionPercentage(service.commissionPercent || 15.0);
     setFormError("");
     setFormSuccess("");
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
     setFormSuccess("");
@@ -84,357 +116,472 @@ export default function AdminServicesPage() {
       return;
     }
 
+    if (!categoryId) {
+      setFormError("Please select or create a Service Category first.");
+      return;
+    }
+
     if (commissionPercentage < 0 || commissionPercentage > 100) {
-      setFormError("Commission percentage must be strictly between 0% and 100%.");
+      setFormError("Commission percentage must be between 0% and 100%.");
       return;
     }
 
     if (basePrice <= 0) {
-      setFormError("Base service price must be greater than $0.");
+      setFormError("Base price must be greater than ₹0.");
       return;
     }
 
-    const areas = serviceAreasStr
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    setIsSaving(true);
+    try {
+      if (editingService) {
+        await adminUpdateServiceAction(editingService.id, {
+          name,
+          categoryId,
+          description,
+          basePrice: Number(basePrice),
+          durationMinutes: Number(durationMinutes),
+          commissionPercent: Number(commissionPercentage),
+        });
+        setFormSuccess(`Service "${name}" updated successfully.`);
+      } else {
+        await adminCreateServiceAction({
+          name,
+          categoryId,
+          description,
+          basePrice: Number(basePrice),
+          durationMinutes: Number(durationMinutes),
+          commissionPercent: Number(commissionPercentage),
+        });
+        setFormSuccess(`Service "${name}" published in real-time.`);
+      }
 
-    const eligibility = eligibilityStr
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const res = adminSaveService({
-      id: editingService ? editingService.id : undefined,
-      name,
-      categoryId,
-      description,
-      basePrice,
-      durationMinutes,
-      commissionPercentage,
-      serviceAreas: areas,
-      eligibilityConditions: eligibility,
-    });
-
-    if (res.success) {
-      setFormSuccess(
-        editingService
-          ? `Service "${name}" updated. Commission rate saved at ${commissionPercentage}%. Existing bookings retain their locked snapshots.`
-          : `Service "${name}" created with ${commissionPercentage}% platform commission.`
-      );
+      await loadData();
       setTimeout(() => {
         setIsModalOpen(false);
-      }, 1500);
-    } else {
-      setFormError(res.error || "Failed to save service.");
+      }, 1000);
+    } catch (err: any) {
+      setFormError(err.message || "Failed to save service to database.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+
+    try {
+      await adminCreateCategoryAction({
+        name: newCatName.trim(),
+        description: newCatDesc.trim() || undefined,
+        displayOrder: categories.length + 1,
+      });
+      setNewCatName("");
+      setNewCatDesc("");
+      setIsCategoryModalOpen(false);
+      await loadData();
+    } catch (err: any) {
+      alert("Failed to create category: " + err.message);
+    }
+  };
+
+  const handleToggle = async (serviceId: string, currentStatus: boolean) => {
+    try {
+      await adminToggleServiceAction(serviceId, !currentStatus);
+      await loadData();
+    } catch (err: any) {
+      alert("Failed to toggle status: " + err.message);
+    }
+  };
+
+  const handleDelete = async (serviceId: string, serviceName: string) => {
+    if (confirm(`Are you sure you want to delete "${serviceName}" from the platform?`)) {
+      try {
+        await adminDeleteServiceAction(serviceId);
+        await loadData();
+      } catch (err: any) {
+        alert("Failed to delete service: " + err.message);
+      }
     }
   };
 
   // Preview Calculations
-  const previewCommission = Math.round((basePrice * (commissionPercentage / 100)) * 100) / 100;
-  const previewNursePayout = Math.round((basePrice - previewCommission) * 100) / 100;
+  const previewCommission = Math.round(basePrice * (commissionPercentage / 100));
+  const previewNursePayout = Math.round(basePrice - previewCommission);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl pb-16">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-            Services & Commission Rates
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
-            Configure clinical procedures, pricing, and <strong>mandatory platform commission percentage</strong>.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              Clinical Procedures & Pricing
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200">
+              Live Neon DB
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Manage procedures, pricing in ₹, duration, and mandatory Careoon commission percentage.
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Clinical Service
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition"
+          >
+            <FolderPlus className="w-4 h-4 text-purple-600" />
+            <span>New Category</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Clinical Procedure</span>
+          </button>
+        </div>
       </div>
 
       {/* Snapshot Protection Notice */}
-      <div className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs text-purple-900 dark:text-purple-200 space-y-1">
-        <div className="font-bold flex items-center gap-1.5 text-purple-950 dark:text-purple-100">
-          <ShieldCheck className="w-4 h-4 text-purple-600" />
-          Snapshot Immutability Guarantee
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-white to-purple-50/50 dark:from-purple-950/40 dark:via-zinc-900 dark:to-purple-950/20 border border-purple-200 dark:border-purple-800/80 text-xs text-purple-900 dark:text-purple-200 flex items-start gap-3 shadow-xs">
+        <ShieldCheck className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
+        <div>
+          <div className="font-extrabold text-purple-950 dark:text-purple-100">
+            Real-Time Neon Database Synchronization
+          </div>
+          <p className="text-[11px] text-purple-800 dark:text-purple-300 mt-0.5 leading-relaxed">
+            Every procedure added, edited, or deleted here updates the live Cloud PostgreSQL database instantly. The changes immediately reflect on the public Homepage and Patient Booking screen.
+          </p>
         </div>
-        <p className="text-purple-800 dark:text-purple-300">
-          When an admin sets or changes a commission rate here, it applies to all <strong>future bookings</strong>. Every confirmed booking stores an immutable <code>lockedCommissionPercentage</code> snapshot, ensuring financial history and nurse payables are never retroactively corrupted.
-        </p>
       </div>
 
       {/* Services Table */}
-      <div className="overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-50 dark:bg-zinc-850 border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-bold text-[10px] tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Service Procedure</th>
-                <th className="py-3 px-3">Category</th>
-                <th className="py-3 px-3">Price</th>
-                <th className="py-3 px-3 font-extrabold text-purple-700 dark:text-purple-400">
-                  Commission %
-                </th>
-                <th className="py-3 px-3">Est. Nurse Net</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {services.map((service) => {
-                const category = categories.find((c) => c.id === service.categoryId);
-                const nurseNet = service.basePrice - (service.basePrice * service.commissionPercentage) / 100;
-                const activeBookingsOnService = bookings.filter((b) => b.serviceId === service.id).length;
-
-                return (
-                  <tr key={service.id} className="hover:bg-zinc-50/70 dark:hover:bg-zinc-850/50 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-white">
-                      <div>{service.name}</div>
-                      <div className="text-[10px] text-zinc-400 font-mono">
-                        {service.durationMinutes}m duration • {service.serviceAreas.length} zip codes
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3 text-zinc-600 dark:text-zinc-400">
-                      {category?.name || "Uncategorized"}
-                    </td>
-                    <td className="py-3.5 px-3 font-bold text-zinc-900 dark:text-white">
-                      {formatCurrency(service.basePrice)}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
-                        {service.commissionPercentage.toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 font-semibold text-teal-600 dark:text-teal-400">
-                      {formatCurrency(nurseNet)}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          service.isActive
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
-                        }`}
-                      >
-                        {service.isActive ? "Active / Bookable" : "Paused"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right space-x-2">
-                      <button
-                        onClick={() => adminToggleServiceStatus(service.id)}
-                        className="text-[11px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline font-medium"
-                      >
-                        {service.isActive ? "Pause" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => openEditModal(service)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-200 text-xs font-bold transition-colors"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <div className="overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-black text-sm text-slate-900 dark:text-white">Published Services</span>
+            <span className="text-xs text-slate-400 font-medium">({services.length} Total)</span>
+          </div>
+          <button
+            onClick={loadData}
+            disabled={isLoading}
+            className="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </button>
         </div>
+
+        {services.length === 0 ? (
+          <div className="text-center py-16 px-4 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center mx-auto">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">
+              Zero Procedures in Database
+            </h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Your database is 100% clean. Click &quot;Add Clinical Procedure&quot; above to create your first verified home nursing service.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 dark:bg-zinc-850 border-b border-slate-200 dark:border-zinc-800 text-slate-400 uppercase font-black text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-3.5 px-5">Clinical Procedure</th>
+                  <th className="py-3.5 px-4">Category</th>
+                  <th className="py-3.5 px-4">Patient Rate</th>
+                  <th className="py-3.5 px-4 font-black text-purple-700 dark:text-purple-400">
+                    Commission %
+                  </th>
+                  <th className="py-3.5 px-4">Est. Nurse Net</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                {services.map((service) => {
+                  const commission = service.commissionPercent || 15.0;
+                  const nurseNet = service.basePrice - (service.basePrice * commission) / 100;
+
+                  return (
+                    <tr
+                      key={service.id}
+                      className="hover:bg-slate-50/70 dark:hover:bg-zinc-850/50 transition-colors"
+                    >
+                      <td className="py-4 px-5 font-bold text-slate-900 dark:text-white">
+                        <div className="text-sm">{service.name}</div>
+                        <div className="text-[11px] text-slate-400 font-normal flex items-center gap-1.5 mt-0.5">
+                          <Clock className="w-3 h-3 text-teal-600" />
+                          <span>{service.durationMinutes} mins duration</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-medium">
+                        {service.categoryName || "Clinical Care"}
+                      </td>
+                      <td className="py-4 px-4 font-black text-slate-900 dark:text-white text-sm">
+                        {formatCurrency(service.basePrice)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200 border border-purple-200">
+                          {commission.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 font-bold text-teal-600 dark:text-teal-400 text-xs">
+                        {formatCurrency(nurseNet)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            service.isActive
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200"
+                              : "bg-slate-100 text-slate-500 dark:bg-zinc-800 border border-slate-200"
+                          }`}
+                        >
+                          {service.isActive ? "Active / Bookable" : "Paused"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 text-right space-x-2">
+                        <button
+                          onClick={() => handleToggle(service.id, service.isActive)}
+                          className="text-[11px] text-slate-500 hover:text-slate-800 underline font-medium"
+                        >
+                          {service.isActive ? "Pause" : "Activate"}
+                        </button>
+                        <button
+                          onClick={() => openEditModal(service)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold transition"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(service.id, service.name)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Create / Edit Modal */}
+      {/* Service Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-zinc-200 dark:border-zinc-800 my-8">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                {editingService ? "Edit Service & Commission Rate" : "Add New Clinical Procedure"}
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 sm:p-8 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  {editingService ? "Edit Clinical Procedure" : "Add New Clinical Procedure"}
+                </h3>
+                <p className="text-xs text-slate-500">Saves directly into live Neon PostgreSQL.</p>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600"
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-800"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-3.5 text-xs">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                  Service Name
+            {formError && (
+              <div className="p-3 rounded-2xl bg-red-50 text-red-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            {formSuccess && (
+              <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{formSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSave} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Procedure Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. PICC Line Dressing & Heparin Flush"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+                  placeholder="e.g., Surgical Wound Dressing (Aseptic)"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    Category
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Clinical Category *
+                </label>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Clinical Description & Sterile Protocol
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe sterile kit requirements, aseptic cleaning, and post-procedure monitoring..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Patient Rate (₹ INR) *
                   </label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={basePrice}
+                    onChange={(e) => setBasePrice(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-black text-sm"
+                  />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Duration (Minutes)
                   </label>
                   <input
                     type="number"
-                    min={15}
-                    step={15}
+                    min="15"
+                    step="5"
+                    required
                     value={durationMinutes}
                     onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-black text-sm"
                   />
                 </div>
               </div>
 
-              {/* Pricing & Commission Setting */}
-              <div className="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-3">
-                <div className="font-bold text-xs text-purple-950 dark:text-purple-200 flex items-center justify-between">
-                  <span>Price & Platform Commission Configuration</span>
-                  <Percent className="w-3.5 h-3.5 text-purple-600" />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">
+                    Careoon Platform Commission (%)
+                  </label>
+                  <span className="font-black text-purple-600">{commissionPercentage}%</span>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                      Standard Base Price ($)
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      required
-                      value={basePrice}
-                      onChange={(e) => setBasePrice(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs font-bold text-zinc-900 dark:text-white outline-hidden"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-purple-900 dark:text-purple-300">
-                      Careoon Commission (% Rate)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.5}
-                      required
-                      value={commissionPercentage}
-                      onChange={(e) => setCommissionPercentage(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border-2 border-purple-500 text-xs font-black text-purple-700 dark:text-purple-300 outline-hidden"
-                    />
-                  </div>
-                </div>
-
-                {/* Real-time Calculation Breakdown */}
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-purple-200/60 dark:border-purple-800/60 text-center text-[11px]">
-                  <div>
-                    <div className="text-zinc-500">Gross Patient Fee</div>
-                    <div className="font-bold text-zinc-900 dark:text-white">
-                      {formatCurrency(basePrice)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-purple-700 font-bold">Careoon Revenue</div>
-                    <div className="font-black text-purple-900 dark:text-purple-200">
-                      {formatCurrency(previewCommission)} ({commissionPercentage}%)
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-teal-700 font-bold">Nurse Net Payout</div>
-                    <div className="font-black text-teal-600 dark:text-teal-400">
-                      {formatCurrency(previewNursePayout)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                  Service Description
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                  Eligible Service Areas (Comma separated postal codes)
-                </label>
                 <input
-                  type="text"
-                  value={serviceAreasStr}
-                  onChange={(e) => setServiceAreasStr(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
+                  type="range"
+                  min="0"
+                  max="40"
+                  step="1"
+                  value={commissionPercentage}
+                  onChange={(e) => setCommissionPercentage(Number(e.target.value))}
+                  className="w-full accent-purple-600"
                 />
+                <div className="mt-2 p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 flex justify-between text-xs">
+                  <span>Careoon Revenue: <strong>{formatCurrency(previewCommission)}</strong></span>
+                  <span className="text-teal-600 font-bold">Nurse Net: <strong>{formatCurrency(previewNursePayout)}</strong></span>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                  Eligibility Conditions (One per line)
-                </label>
-                <textarea
-                  rows={2}
-                  value={eligibilityStr}
-                  onChange={(e) => setEligibilityStr(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-hidden"
-                />
-              </div>
-
-              {formError && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs">
-                  {formError}
-                </div>
-              )}
-
-              {formSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs">
-                  {formSuccess}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-700 font-bold transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-md shadow-purple-600/20 active:scale-95 transition"
                 >
-                  Save Service & Lock Rate
+                  {isSaving ? "Saving to Cloud DB..." : editingService ? "Update Procedure" : "Publish Procedure"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+              <h3 className="font-black text-base text-slate-900 dark:text-white">
+                Add Clinical Category
+              </h3>
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCategory} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="e.g., Post-Operative Clinical Care"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={newCatDesc}
+                  onChange={(e) => setNewCatDesc(e.target.value)}
+                  placeholder="Specialized care after major surgeries and hospital discharge..."
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition shadow-md shadow-purple-600/20"
+                >
+                  Create Category
                 </button>
               </div>
             </form>

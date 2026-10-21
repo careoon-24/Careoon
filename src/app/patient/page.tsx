@@ -23,19 +23,18 @@ export default function PatientServicesPage() {
     fetch("/api/services")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.categories && data.categories.length > 0) {
+        if (data.success && data.categories) {
           setDbCategories(data.categories);
         }
       })
       .catch(() => {});
   }, []);
 
-  const activeServices = services.filter((s) => s.isActive);
   const dbServices = dbCategories.flatMap((c) =>
     (c.services || []).map((s: any) => ({
       id: s.id,
       name: s.name,
-      description: s.description || s.shortDescription,
+      description: s.description || s.shortDescription || "",
       basePrice: s.basePrice,
       durationMinutes: s.durationMinutes,
       categoryId: c.id,
@@ -43,8 +42,8 @@ export default function PatientServicesPage() {
     }))
   );
 
-  const effectiveServices = dbServices.length > 0 ? dbServices : activeServices;
-  const effectiveCategories = dbCategories.length > 0 ? dbCategories : categories.filter((c) => c.isActive);
+  const effectiveServices = dbServices;
+  const effectiveCategories = dbCategories;
 
   const filteredServices = effectiveServices.filter((service) => {
     const matchesCategory =
