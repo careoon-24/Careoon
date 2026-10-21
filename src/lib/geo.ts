@@ -37,8 +37,9 @@ export function formatDistance(distanceKm: number): string {
   return `${distanceKm.toFixed(1)} km away`;
 }
 
-// Default Pune Landmarks & Coordinates
-export const PUNE_CENTRAL_COORDS = {
-  latitude: 18.5204,
-  longitude: 73.8567,
+// Default Sangli Landmarks & Coordinates
+export const SANGLI_COORDS = {
+  latitude: 16.8524,
+  longitude: 74.5815,
 };
+export const PUNE_CENTRAL_COORDS = SANGLI_COORDS;

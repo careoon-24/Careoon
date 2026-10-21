@@ -36,7 +36,7 @@ export default function HomePage() {
   const [nurses, setNurses] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('Pune');
+  const [selectedCity, setSelectedCity] = useState<string>('Sangli');
 
   // Check login state
   useEffect(() => {
@@ -114,19 +114,18 @@ export default function HomePage() {
                 <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">
                   Verified Care Location
                 </span>
-                <button
-                  onClick={() => setSelectedCity(selectedCity === 'Pune' ? 'Mumbai' : 'Pune')}
-                  className="font-extrabold text-slate-900 flex items-center gap-1 hover:text-teal-700 transition"
-                >
-                  <span>{selectedCity}, Maharashtra</span>
-                  <span className="text-[10px] text-teal-600 font-normal">▼</span>
-                </button>
+                <div className="font-black text-slate-900 flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm">Sangli - Miraj, Maharashtra</span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-extrabold uppercase tracking-wider">
+                    Official Launch
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-[11px] font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Nearby Nurses Available</span>
+              <span>Sangli Care Network Active</span>
             </div>
           </div>
 
@@ -136,7 +135,7 @@ export default function HomePage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 'Surgical Dressing', 'Catheter', 'IV Drip'..."
+              placeholder="Search 'Surgical Dressing', 'Catheter', 'IV Drip' in Sangli..."
               className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-100/90 border border-slate-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/30 text-xs shadow-inner transition"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -152,16 +151,16 @@ export default function HomePage() {
             <div className="lg:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-teal-200">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                Nearest Distance-Matched Certified Nurses
+                Sangli & Miraj Certified Home Care Nurses
               </div>
 
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
                 Hospital-Grade Nursing Care, <br />
-                <span className="text-teal-300">Right at Your Home</span>
+                <span className="text-teal-300">Directly at Your Home in Sangli</span>
               </h1>
 
               <p className="text-xs sm:text-sm text-teal-100/80 max-w-xl leading-relaxed">
-                Connect directly with background-verified, Maharashtra Nursing Council registered nurses for sterile post-operative wound dressings, IV fluid therapy, and bedridden patient assistance.
+                Connect directly with background-verified, Maharashtra Nursing Council registered nurses across Sangli, Miraj, Vishrambag & Kupwad for sterile wound dressings, IV therapy, catheterization, and elderly care.
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-2 text-xs font-semibold text-teal-200">
@@ -273,7 +272,7 @@ export default function HomePage() {
               Available Home Procedures
             </h2>
             <p className="text-xs text-slate-500">
-              Showing {filteredServices.length} verified procedures in {selectedCity}
+              Showing {filteredServices.length} verified procedures in Sangli - Miraj District
             </p>
           </div>
         </div>
