@@ -548,19 +548,43 @@ export default function HomePage() {
         </Link>
 
         <Link
-          href={currentUser ? '/patient/bookings' : '/login?redirect=/patient/bookings'}
+          href={
+            currentUser?.role === 'ADMIN'
+              ? '/admin/bookings'
+              : currentUser?.role === 'NURSE'
+              ? '/nurse'
+              : currentUser
+              ? '/patient/bookings'
+              : '/login?redirect=/patient/bookings'
+          }
           className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-800 font-medium text-[10px] transition"
         >
           <CalendarCheck className="w-5 h-5" />
-          <span>My Bookings</span>
+          <span>{currentUser?.role === 'ADMIN' ? 'Ops' : currentUser?.role === 'NURSE' ? 'Visits' : 'My Bookings'}</span>
         </Link>
 
         <Link
-          href={currentUser ? '/patient/profile' : '/login?redirect=/patient/profile'}
+          href={
+            currentUser?.role === 'ADMIN'
+              ? '/admin'
+              : currentUser?.role === 'NURSE'
+              ? '/nurse'
+              : currentUser
+              ? '/patient/profile'
+              : '/login'
+          }
           className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-800 font-medium text-[10px] transition"
         >
           <User className="w-5 h-5" />
-          <span>{currentUser ? 'Profile' : 'Sign In'}</span>
+          <span>
+            {currentUser?.role === 'ADMIN'
+              ? 'Admin'
+              : currentUser?.role === 'NURSE'
+              ? 'Nurse'
+              : currentUser
+              ? 'Profile'
+              : 'Sign In'}
+          </span>
         </Link>
       </nav>
     </div>

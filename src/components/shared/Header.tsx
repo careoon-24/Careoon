@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { HeartPulse, User, LogOut, LogIn } from "lucide-react";
+import { HeartPulse, User, LogOut, LogIn, Shield, Stethoscope } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -26,6 +26,7 @@ export function Header() {
     return null;
   }
 
+  // Re-check authentication on route change
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => {
@@ -40,7 +41,7 @@ export function Header() {
         }
       })
       .catch(() => setUser(null));
-  }, []);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -50,7 +51,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800 transition-colors">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-colors">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 group">
@@ -58,43 +59,66 @@ export function Header() {
             <HeartPulse className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-black text-lg tracking-tight text-zinc-900 dark:text-white block leading-none">
+            <span className="font-black text-lg tracking-tight text-slate-900 block leading-none">
               Careoon
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-              Verified Home Nursing
+            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600">
+              Sangli - Miraj Nursing
             </span>
           </div>
         </Link>
 
-        {/* Desktop Web Navigation Links (Hidden on small mobile screens) */}
-        <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-zinc-600 dark:text-zinc-300">
+        {/* Desktop Web Navigation Links */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
           <Link href="/" className="hover:text-teal-600 transition">
             Home Care
           </Link>
           <Link href="/patient" className="hover:text-teal-600 transition">
             Clinical Procedures
           </Link>
-          <Link href="/#why" className="hover:text-teal-600 transition">
-            Why Careoon
-          </Link>
           <Link href="/patient/support" className="hover:text-teal-600 transition">
             24/7 Helpline
           </Link>
         </nav>
 
-        {/* User Status / Clean Account Controls */}
+        {/* User Status / Role-Aware Navigation */}
         <div className="flex items-center gap-2">
           {user ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                <User className="w-3.5 h-3.5 text-teal-600" />
-                <span className="max-w-[120px] truncate">{user.fullName}</span>
-              </div>
+              {user.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Admin Console</span>
+                </Link>
+              )}
+
+              {user.role === "NURSE" && (
+                <Link
+                  href="/nurse"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition"
+                >
+                  <Stethoscope className="w-3.5 h-3.5" />
+                  <span>Nurse Dashboard</span>
+                </Link>
+              )}
+
+              {user.role === "PATIENT" && (
+                <Link
+                  href="/patient"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 font-bold text-xs shadow-xs transition"
+                >
+                  <User className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="max-w-[120px] truncate">{user.fullName}</span>
+                </Link>
+              )}
+
               <button
                 onClick={handleLogout}
                 title="Sign out"
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -102,7 +126,7 @@ export function Header() {
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Sign In</span>

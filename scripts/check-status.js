@@ -26,6 +26,12 @@ async function check() {
   for (const n of nurses) {
     console.log(`- Nurse: ${n.user.fullName} | Code: ${n.nurseCode || 'NONE'} | Approval: ${n.adminApprovalStatus}`);
   }
+
+  const users = await prisma.user.findMany();
+  console.log('\nAll Users in DB:', users.length);
+  for (const u of users) {
+    console.log(`- User: ${u.fullName} (${u.role}) | Email: ${u.email} | Phone: ${u.phone}`);
+  }
 }
 
 check()
