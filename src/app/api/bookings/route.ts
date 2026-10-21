@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
@@ -19,7 +22,10 @@ export async function GET(req: NextRequest) {
       if (!nurseProfile) {
         return NextResponse.json({ success: true, bookings: [] });
       }
-      whereClause.nurseId = nurseProfile.id;
+      whereClause.OR = [
+        { nurseId: nurseProfile.id },
+        { offers: { some: { nurseId: nurseProfile.id, status: 'PENDING' } } },
+      ];
     }
     // ADMIN sees all bookings (empty whereClause)
 

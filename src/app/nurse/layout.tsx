@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Stethoscope, DollarSign, CalendarCheck, UserCheck, ShieldCheck } from "lucide-react";
-import { useCareoon } from "@/context/CareoonContext";
+import { useState, useEffect } from "react";
 
 export default function NurseLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,13 +14,39 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  const { offers, getCurrentNurseProfile, currentUser } = useCareoon();
+  const [pendingOffersCount, setPendingOffersCount] = useState<number>(0);
 
-  const nurseProfile = getCurrentNurseProfile();
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch("/api/bookings");
+        const data = await res.json();
+        if (data.success && data.bookings && isMounted) {
+          let count = 0;
+          data.bookings.forEach((b: any) => {
+            if (b.offers && Array.isArray(b.offers)) {
+              b.offers.forEach((o: any) => {
+                if (o.status === "PENDING" && new Date(o.expiresAt) > new Date()) {
+                  count++;
+                }
+              });
+            }
+          });
+          setPendingOffersCount(count);
+        }
+      } catch (err) {
+        // silent fallback
+      }
+    };
 
-  const pendingOffersCount = offers.filter(
-    (o) => o.status === "pending" && (nurseProfile ? o.nurseId === nurseProfile.id : true)
-  ).length;
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const navItems = [
     {
@@ -60,7 +86,7 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
               Nurse Clinical Operations
             </span>
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <span>{currentUser?.fullName || "Registered Nurse Portal"}</span>
+              <span>Sangli Nurse Portal</span>
               <ShieldCheck className="w-4 h-4 text-teal-600" />
             </h2>
           </div>
@@ -93,12 +119,10 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
           })}
         </div>
 
-        {nurseProfile && (
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{nurseProfile.isAvailable ? "Online & Ready" : "Offline"}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Online & Ready</span>
+        </div>
       </div>
 
       {/* Main Content Area */}

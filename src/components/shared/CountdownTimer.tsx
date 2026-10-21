@@ -6,7 +6,7 @@ import { formatTimeRemaining } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 interface CountdownTimerProps {
-  expiresAt: number;
+  expiresAt: number | string | Date;
   onExpire?: () => void;
   className?: string;
   showIcon?: boolean;
@@ -16,8 +16,9 @@ export function CountdownTimer({ expiresAt, onExpire, className, showIcon = true
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
+    const targetMs = typeof expiresAt === "number" ? expiresAt : new Date(expiresAt).getTime();
     const tick = () => {
-      const remaining = expiresAt - Date.now();
+      const remaining = targetMs - Date.now();
       setTimeLeft(remaining);
       if (remaining <= 0 && onExpire) {
         onExpire();

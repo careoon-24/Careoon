@@ -13,7 +13,7 @@ import {
   FileSpreadsheet,
   AlertCircle,
 } from "lucide-react";
-import { useCareoon } from "@/context/CareoonContext";
+import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,11 +23,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  const { offers, bookings, payments } = useCareoon();
+  const [totalAlerts, setTotalAlerts] = useState<number>(0);
 
-  const pendingOffersCount = offers.filter((o) => o.status === "pending").length;
-  const reselectionCount = bookings.filter((b) => b.status === "reselection_required").length;
-  const totalAlerts = pendingOffersCount + reselectionCount;
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch("/api/bookings");
+        const data = await res.json();
+        if (data.success && data.bookings && isMounted) {
+          const pending = data.bookings.filter((b: any) =>
+            b.status === "NURSE_OFFERED" || b.status === "SEARCHING_NURSE"
+          ).length;
+          setTotalAlerts(pending);
+        }
+      } catch (err) {
+        // silent fallback
+      }
+    };
+
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 6000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const navLinks = [
     {
