@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCareoon } from "@/context/CareoonContext";
 import { formatCurrency } from "@/lib/utils";
+import { getPatientProfileAction } from "@/actions/profile";
+import { createBookingAction } from "@/actions/bookings";
 import {
   Calendar,
   Clock,
@@ -16,400 +17,553 @@ import {
   ArrowLeft,
   ChevronRight,
   User,
+  Users,
   Info,
+  Sparkles,
+  Phone,
+  FileText,
+  AlertCircle,
 } from "lucide-react";
 
 export default function BookServicePage() {
   const params = useParams();
   const router = useRouter();
-  const {
-    services,
-    currentUser,
-    getCurrentPatientProfile,
-    getEligibleNursesForService,
-    createBookingWithNurseOffer,
-  } = useCareoon();
-
   const serviceId = params?.serviceId as string;
-  const service = services.find((s) => s.id === serviceId);
 
-  const patientProfile = getCurrentPatientProfile();
+  const [service, setService] = useState<any | null>(null);
+  const [nurses, setNurses] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Booking details state
-  const [street, setStreet] = useState<string>(patientProfile?.address.street || "742 Evergreen Terrace");
-  const [apartment, setApartment] = useState<string>(patientProfile?.address.apartment || "Apt 4B");
-  const [city, setCity] = useState<string>(patientProfile?.address.city || "Metro City");
-  const [postalCode, setPostalCode] = useState<string>(patientProfile?.address.postalCode || "10001");
-  const [scheduledDate, setScheduledDate] = useState<string>("2026-10-18");
-  const [scheduledTimeSlot, setScheduledTimeSlot] = useState<string>("10:00 - 11:00 AM");
-  const [specialInstructions, setSpecialInstructions] = useState<string>("");
+  // 1. RECIPIENT TOGGLE: 'MYSELF' or 'FAMILY'
+  const [bookingRecipient, setBookingRecipient] = useState<"MYSELF" | "FAMILY">("MYSELF");
 
-  // Selected Nurse
+  // Patient & Address details
+  const [patientName, setPatientName] = useState<string>("");
+  const [patientPhone, setPatientPhone] = useState<string>("");
+  const [patientAge, setPatientAge] = useState<string>("");
+  const [patientGender, setPatientGender] = useState<string>("MALE");
+  const [familyRelationship, setFamilyRelationship] = useState<string>("Mother");
+
+  // Sangli Doorstep Address
+  const [apartment, setApartment] = useState<string>("");
+  const [street, setStreet] = useState<string>("");
+  const [city, setCity] = useState<string>("Sangli");
+  const [postalCode, setPostalCode] = useState<string>("416416");
+
+  // Date & Time Slot
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [scheduledDate, setScheduledDate] = useState<string>(todayStr);
+  const [scheduledTimeSlot, setScheduledTimeSlot] = useState<string>("10:00 - 11:30 AM");
+  const [clinicalNotes, setClinicalNotes] = useState<string>("");
+
+  // Nurse Selection & Submit
   const [selectedNurseId, setSelectedNurseId] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  if (!service) {
-    return (
-      <div className="text-center py-10 space-y-2">
-        <p className="text-xs text-rose-500 font-semibold">Service not found.</p>
-        <Link href="/patient" className="text-xs text-blue-600 underline">
-          Return to Catalog
-        </Link>
-      </div>
-    );
-  }
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        // 1. Fetch real service details
+        const resServ = await fetch("/api/services");
+        const dataServ = await resServ.json();
+        if (dataServ.success && dataServ.categories) {
+          const allServices = dataServ.categories.flatMap((cat: any) =>
+            (cat.services || []).map((s: any) => ({
+              ...s,
+              categoryName: cat.name,
+            }))
+          );
+          const found = allServices.find((s: any) => s.id === serviceId);
+          setService(found || null);
+        }
 
-  // Realtime eligible nurses calculation
-  const candidateNurses = getEligibleNursesForService(
-    service.id,
-    postalCode,
-    scheduledDate,
-    scheduledTimeSlot
-  );
+        // 2. Fetch real verified nurses
+        const resNurses = await fetch("/api/nurses");
+        const dataNurses = await resNurses.json();
+        if (dataNurses.success && dataNurses.nurses) {
+          setNurses(dataNurses.nurses);
+          if (dataNurses.nurses.length > 0) {
+            setSelectedNurseId(dataNurses.nurses[0].id);
+          }
+        }
 
-  const eligibleNurses = candidateNurses.filter((c) => c.eligible);
-  const ineligibleNurses = candidateNurses.filter((c) => !c.eligible);
+        // 3. Fetch patient profile to autofill
+        const resProf = await getPatientProfileAction();
+        if (resProf.success && resProf.user) {
+          const u = resProf.user;
+          setUserProfile(u);
+          // Autofill for "MYSELF"
+          setPatientName(u.fullName || "");
+          setPatientPhone(u.phone || "");
+          setPatientAge(u.age ? String(u.age) : "");
+          setPatientGender(u.gender || "MALE");
+          setStreet(u.addressStreet || "");
+          setApartment(u.addressApartment || "");
+          setCity(u.addressCity || "Sangli");
+          setPostalCode(u.addressPincode || "416416");
+        }
+      } catch (err) {
+        console.error("Booking page init error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, [serviceId]);
+
+  // When user toggles between "MYSELF" and "FAMILY"
+  const handleToggleRecipient = (type: "MYSELF" | "FAMILY") => {
+    setBookingRecipient(type);
+    if (type === "MYSELF" && userProfile) {
+      setPatientName(userProfile.fullName || "");
+      setPatientPhone(userProfile.phone || "");
+      setPatientAge(userProfile.age ? String(userProfile.age) : "");
+      setPatientGender(userProfile.gender || "MALE");
+      setStreet(userProfile.addressStreet || "");
+      setApartment(userProfile.addressApartment || "");
+      setCity(userProfile.addressCity || "Sangli");
+      setPostalCode(userProfile.addressPincode || "416416");
+    } else {
+      // Clear for family recipient or select first saved family member
+      const saved = userProfile?.savedFamilyMembers ? JSON.parse(userProfile.savedFamilyMembers) : [];
+      if (saved.length > 0) {
+        applyFamilyMember(saved[0]);
+      } else {
+        setPatientName("");
+        setPatientPhone(userProfile?.phone || "");
+        setPatientAge("");
+        setPatientGender("FEMALE");
+      }
+    }
+  };
+
+  const applyFamilyMember = (member: any) => {
+    setPatientName(member.name);
+    setPatientAge(String(member.age || ""));
+    setPatientGender(member.gender || "FEMALE");
+    setFamilyRelationship(member.relationship || "Mother");
+    if (member.addressStreet) setStreet(member.addressStreet);
+    if (member.addressApartment) setApartment(member.addressApartment);
+  };
+
+  const savedFamilyList = userProfile?.savedFamilyMembers
+    ? JSON.parse(userProfile.savedFamilyMembers)
+    : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
+    if (!patientName.trim()) {
+      setErrorMessage("Patient full name is required.");
+      return;
+    }
+
+    if (!street.trim()) {
+      setErrorMessage("Doorstep address / street in Sangli is required.");
+      return;
+    }
+
     if (!selectedNurseId) {
-      setErrorMessage("Please select an eligible nurse to submit your booking.");
+      setErrorMessage("Please select an available nurse for this visit.");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const { createBookingAction } = await import("@/actions/bookings");
+      const fullAddress = apartment ? `${apartment}, ${street}` : street;
       const res = await createBookingAction({
         serviceId: service.id,
         nurseId: selectedNurseId,
         scheduledDate,
         scheduledTime: scheduledTimeSlot,
-        addressLine: `${street}, ${apartment}`,
-        city,
-        postalCode,
-        patientContactPhone: (currentUser as any)?.phone || "+919876543210",
-        patientName: currentUser?.fullName || "Patient",
-        patientNotes: specialInstructions,
+        addressLine: fullAddress,
+        city: city || "Sangli",
+        postalCode: postalCode || "416416",
+        patientContactPhone: patientPhone || userProfile?.phone || "+919822000000",
+        patientName: `${patientName}${bookingRecipient === "FAMILY" ? ` (${familyRelationship})` : ""}`,
+        patientNotes: clinicalNotes,
       });
 
-      if (res.success && res.bookingId) {
+      if (res && res.bookingId) {
         router.push(`/patient/bookings/${res.bookingId}`);
         return;
       }
+      setErrorMessage("Failed to submit booking.");
+      setSubmitting(false);
     } catch (err: any) {
       if (err.message?.includes("logged in")) {
         router.push(`/login?redirect=/patient/book/${service.id}`);
         return;
       }
-      
-      const result = createBookingWithNurseOffer(
-        service.id,
-        {
-          street,
-          apartment,
-          city,
-          postalCode,
-          instructions: specialInstructions,
-        },
-        scheduledDate,
-        scheduledTimeSlot,
-        selectedNurseId,
-        specialInstructions
-      );
-
-      if (result.success && result.bookingId) {
-        router.push(`/patient/bookings/${result.bookingId}`);
-      } else {
-        setErrorMessage(result.error || err.message || "Failed to create booking offer.");
-        setSubmitting(false);
-      }
+      setErrorMessage(err.message || "Failed to schedule home nursing visit.");
+      setSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="text-center py-20 space-y-3">
+        <div className="w-8 h-8 rounded-full border-2 border-teal-600 border-t-transparent animate-spin mx-auto" />
+        <p className="text-xs text-slate-400 font-bold">Configuring Sangli Clinical Care...</p>
+      </div>
+    );
+  }
+
+  if (!service) {
+    return (
+      <div className="text-center py-16 space-y-3 bg-white rounded-3xl border border-slate-200 p-6">
+        <p className="text-sm font-bold text-slate-800">Clinical Service Not Found</p>
+        <p className="text-xs text-slate-400">The requested procedure may have been updated by admin.</p>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white font-bold text-xs"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Browse Available Procedures</span>
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 pb-6">
-      {/* Top Header */}
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto pb-16">
+      {/* Top Header & Breadcrumb */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 font-bold transition"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Procedures</span>
         </button>
-        <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-          Step 2 of 2: Nurse Selection
+        <span className="text-xs font-black text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+          Doorstep Nursing • Sangli - Miraj
         </span>
       </div>
 
-      <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 flex items-center justify-between">
-        <div>
-          <span className="text-[10px] text-blue-700 dark:text-blue-300 font-semibold uppercase">
-            Service Selected
-          </span>
-          <h2 className="text-xs font-bold text-zinc-900 dark:text-white">{service.name}</h2>
-          <span className="text-[11px] text-zinc-500">{service.durationMinutes} mins estimated</span>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-extrabold text-blue-600 dark:text-blue-400">
-            {formatCurrency(service.basePrice)}
+      {/* Selected Procedure Summary Card */}
+      <div className="p-5 rounded-3xl bg-gradient-to-r from-teal-900 to-slate-950 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-extrabold uppercase tracking-wider">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>MNC Verified Procedure</span>
           </div>
-          <span className="text-[10px] text-zinc-400">Fixed Rate</span>
+          <h1 className="text-lg sm:text-xl font-black">{service.name}</h1>
+          <p className="text-xs text-teal-100/70">{service.durationMinutes} mins duration • Sterile Single-Use Kit Included</p>
+        </div>
+
+        <div className="sm:text-right border-t sm:border-t-0 sm:border-l border-white/10 pt-3 sm:pt-0 sm:pl-6 shrink-0">
+          <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Fixed Patient Rate</span>
+          <div className="text-2xl font-black text-white">{formatCurrency(service.basePrice)}</div>
+          <span className="text-[10px] text-teal-300 font-medium">All taxes & sterile kit included</span>
         </div>
       </div>
 
-      {/* Section 1: Address & Time Slot */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-          <MapPin className="w-3.5 h-3.5" />
-          1. Service Address & Time Slot
-        </h3>
+      {errorMessage && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="col-span-2 space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Street Address
+      {/* 1. RECIPIENT SELECTION (WHO IS THIS FOR?) */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+        <div>
+          <span className="text-xs font-black uppercase tracking-wider text-teal-700 block">
+            Step 1: Patient Selection
+          </span>
+          <h2 className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
+            Who needs this clinical nursing care?
+          </h2>
+        </div>
+
+        {/* 2-Option Master Toggle Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleToggleRecipient("MYSELF")}
+            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center ${
+              bookingRecipient === "MYSELF"
+                ? "border-teal-600 bg-teal-50/70 text-teal-900 shadow-sm"
+                : "border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-600"
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold ${
+              bookingRecipient === "MYSELF" ? "bg-teal-600 text-white" : "bg-slate-200 text-slate-600"
+            }`}>
+              <User className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-black">Book for Myself</span>
+            <span className="text-[10px] text-slate-500 font-medium">
+              Autofills my saved profile & Sangli address
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleToggleRecipient("FAMILY")}
+            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center ${
+              bookingRecipient === "FAMILY"
+                ? "border-teal-600 bg-teal-50/70 text-teal-900 shadow-sm"
+                : "border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-600"
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold ${
+              bookingRecipient === "FAMILY" ? "bg-teal-600 text-white" : "bg-slate-200 text-slate-600"
+            }`}>
+              <Users className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-black">Book for Family / Someone Else</span>
+            <span className="text-[10px] text-slate-500 font-medium">
+              Mother, Father, Child, or Relative
+            </span>
+          </button>
+        </div>
+
+        {/* Quick Family Members Pills (If FAMILY chosen) */}
+        {bookingRecipient === "FAMILY" && savedFamilyList.length > 0 && (
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <span className="text-[11px] font-bold text-slate-500 block">
+              Quick Select Saved Family Member:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {savedFamilyList.map((m: any) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => applyFamilyMember(m)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    patientName === m.name
+                      ? "bg-teal-600 text-white shadow-xs"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
+                  }`}
+                >
+                  <span>{m.name} ({m.relationship})</span>
+                  {patientName === m.name && <CheckCircle className="w-3.5 h-3.5" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Patient Details Form Fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Patient Full Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={patientName}
+              onChange={(e) => setPatientName(e.target.value)}
+              placeholder="e.g. Sunita Patil"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Age (Years)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="120"
+              value={patientAge}
+              onChange={(e) => setPatientAge(e.target.value)}
+              placeholder="e.g. 58"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Gender
+            </label>
+            <select
+              value={patientGender}
+              onChange={(e) => setPatientGender(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold"
+            >
+              <option value="FEMALE">Female</option>
+              <option value="MALE">Male</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. SANGLI DOORSTEP VISIT ADDRESS */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+        <div>
+          <span className="text-xs font-black uppercase tracking-wider text-teal-700 block">
+            Step 2: Doorstep Address & Time Slot
+          </span>
+          <h2 className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
+            Where and when should the nurse arrive?
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="sm:col-span-2">
+            <label className="block font-bold text-slate-700 mb-1">
+              House / Apartment / Landmark in Sangli *
             </label>
             <input
               type="text"
               required
               value={street}
               onChange={(e) => setStreet(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
+              placeholder="e.g. Flat 302, Sai Vihar, Near Ganpati Temple, 100 Feet Road"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Apt / Suite
-            </label>
-            <input
-              type="text"
-              value={apartment}
-              onChange={(e) => setApartment(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Postal Code (Area Match)
-            </label>
-            <input
-              type="text"
-              required
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              Requested Date
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Date of Clinical Visit *
             </label>
             <input
               type="date"
               required
+              min={todayStr}
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Time Slot
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Preferred Time Window *
             </label>
             <select
               value={scheduledTimeSlot}
               onChange={(e) => setScheduledTimeSlot(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold"
             >
-              <option value="08:00 - 09:30 AM">08:00 - 09:30 AM</option>
-              <option value="10:00 - 11:00 AM">10:00 - 11:00 AM</option>
-              <option value="01:00 - 02:30 PM">01:00 - 02:30 PM</option>
-              <option value="03:00 - 04:30 PM">03:00 - 04:30 PM</option>
+              <option value="08:00 - 09:30 AM">Morning (08:00 - 09:30 AM)</option>
+              <option value="10:00 - 11:30 AM">Morning (10:00 - 11:30 AM)</option>
+              <option value="01:00 - 02:30 PM">Afternoon (01:00 - 02:30 PM)</option>
+              <option value="04:00 - 05:30 PM">Evening (04:00 - 05:30 PM)</option>
+              <option value="06:30 - 08:00 PM">Night (06:30 - 08:00 PM)</option>
             </select>
           </div>
 
-          <div className="col-span-2 space-y-1">
-            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-              Special Clinical Instructions / Access Notes
+          <div className="sm:col-span-2">
+            <label className="block font-bold text-slate-700 mb-1">
+              Doctor&apos;s Prescription Notes / Access Instructions (Optional)
             </label>
             <textarea
               rows={2}
-              value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
-              placeholder="e.g. Ring buzzer twice. Discharge note is on the bedside table."
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
+              value={clinicalNotes}
+              onChange={(e) => setClinicalNotes(e.target.value)}
+              placeholder="e.g., Suture removal after orthopedic surgery, IV drip prescribed by Dr. Kulkarni, Miraj..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50"
             />
           </div>
         </div>
       </div>
 
-      {/* Section 2: Eligible Nurse Comparison */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-            2. Compare & Select Eligible Nurse
-          </h3>
-          <span className="text-[10px] font-semibold text-teal-600 dark:text-teal-400">
-            {eligibleNurses.length} qualified in {postalCode}
+      {/* 3. NEARBY VERIFIED NURSE SELECTION */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+        <div>
+          <span className="text-xs font-black uppercase tracking-wider text-teal-700 block">
+            Step 3: Distance-Matched Certified Nurse
           </span>
+          <h2 className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
+            Select your assigned clinical care provider
+          </h2>
         </div>
 
-        {eligibleNurses.length === 0 ? (
-          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              No Qualified Nurses Available in Postal Code {postalCode}
-            </div>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-              Try testing postal code <strong>10001</strong> or <strong>10002</strong>, or submit a request for manual admin assistance.
+        {nurses.length === 0 ? (
+          <div className="p-6 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs space-y-2 text-center">
+            <AlertTriangle className="w-6 h-6 text-amber-600 mx-auto" />
+            <h4 className="font-extrabold text-amber-900">No Verified Nurses Currently Active in Database</h4>
+            <p className="text-amber-800 text-[11px] max-w-md mx-auto leading-relaxed">
+              Your platform database is in a clean state. Once licensed nurses apply at <code>/nurse/activate</code> and admin approves them at <code>/admin/nurses</code>, they will appear here with live GPS distance matching.
             </p>
           </div>
         ) : (
-          <div className="space-y-2.5">
-            {eligibleNurses.map(({ nurse, user }) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {nurses.map((nurse) => {
+              const name = nurse.user?.fullName || "Certified Nurse";
               const isSelected = selectedNurseId === nurse.id;
 
               return (
                 <div
                   key={nurse.id}
                   onClick={() => setSelectedNurseId(nurse.id)}
-                  className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
                     isSelected
-                      ? "bg-blue-50/60 dark:bg-blue-950/40 border-blue-600 dark:border-blue-400 ring-2 ring-blue-500/30"
-                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
+                      ? "border-teal-600 bg-teal-50/70 shadow-sm"
+                      : "border-slate-200 hover:border-slate-300 bg-slate-50/60"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-10 h-10 rounded-full bg-zinc-100 overflow-hidden shrink-0 border">
-                        {user.avatarUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={user.avatarUrl}
-                            alt={user.fullName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-xs text-zinc-500">
-                            {user.fullName.substring(0, 2)}
-                          </div>
-                        )}
-                      </div>
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
                       <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-xs text-zinc-900 dark:text-white">
-                            {user.fullName}
-                          </span>
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 text-[9px] font-semibold">
-                            <ShieldCheck className="w-2.5 h-2.5" />
-                            Verified RN
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                          License: {nurse.licenseNumber}
-                        </div>
+                        <h4 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+                          {name}, RN
+                          <ShieldCheck className="w-4 h-4 text-teal-500" />
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          MNC: {nurse.registrationNumber} • {nurse.experienceYears} yrs Clinical Exp
+                        </p>
+                      </div>
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 border-teal-600">
+                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />}
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-1 text-xs font-bold text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{nurse.ratingAverage.toFixed(1)}</span>
-                      <span className="text-[10px] text-zinc-400 font-normal">
-                        ({nurse.ratingCount})
-                      </span>
-                    </div>
+                    {nurse.bio && (
+                      <p className="text-[11px] text-slate-600 line-clamp-2">{nurse.bio}</p>
+                    )}
                   </div>
 
-                  {nurse.bio && (
-                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-2 line-clamp-2">
-                      {nurse.bio}
-                    </p>
-                  )}
-
-                  {/* Performance stats & badges */}
-                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-[10px]">
-                    <div className="text-zinc-500">
-                      Completed:{" "}
-                      <span className="font-bold text-zinc-800 dark:text-zinc-200">
-                        {nurse.completedBookingsCount}
-                      </span>
-                    </div>
-                    <div className="text-zinc-500">
-                      Experience:{" "}
-                      <span className="font-bold text-zinc-800 dark:text-zinc-200">
-                        {nurse.yearsExperience || 5}+ yrs
-                      </span>
-                    </div>
-                    <div className="text-right text-teal-600 dark:text-teal-400 font-semibold">
-                      {isSelected ? "Selected ✓" : "Click to select"}
-                    </div>
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
+                    <span className="text-[10px] font-bold text-teal-700 bg-teal-100/60 px-2 py-0.5 rounded-md">
+                      Within Sangli-Miraj Zone
+                    </span>
+                    <span className="font-black text-amber-500 flex items-center gap-1 text-[11px]">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                      {nurse.ratingAverage ? Number(nurse.ratingAverage).toFixed(1) : "5.0"}
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
-        {/* Ineligible Nurses Dropdown / Transparency */}
-        {ineligibleNurses.length > 0 && (
-          <details className="text-[11px] text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2">
-            <summary className="cursor-pointer font-medium hover:text-zinc-800 dark:hover:text-zinc-300">
-              Why are {ineligibleNurses.length} other nurses unavailable? (Eligibility Rules)
-            </summary>
-            <div className="mt-2 space-y-1.5 pl-2 border-l border-zinc-200 dark:border-zinc-700">
-              {ineligibleNurses.map(({ nurse, user, reasons }) => (
-                <div key={nurse.id} className="text-[10px]">
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                    {user.fullName}:
-                  </span>{" "}
-                  <span className="text-rose-500">{reasons.join("; ")}</span>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
       </div>
 
-      {/* 15-Minute Response Policy Disclaimer */}
-      <div className="p-3 rounded-xl bg-zinc-100/70 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1">
-        <div className="flex items-center gap-1 font-semibold text-zinc-800 dark:text-zinc-200">
-          <Clock className="w-3.5 h-3.5 text-blue-600" />
-          Server-Enforced 15-Minute Response Policy
+      {/* 4. SUBMIT ORDER BUTTON */}
+      <div className="p-5 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] text-teal-300 font-extrabold uppercase tracking-wider block">
+            Careoon 15-Minute Response Commitment
+          </span>
+          <p className="text-xs text-slate-300 mt-0.5">
+            Payment is collected only at your doorstep after sterile nursing care is delivered.
+          </p>
         </div>
-        <p>
-          Once submitted, the selected nurse has <strong>exactly 15 minutes</strong> to accept. If they decline or the timer expires, you can instantly reselect another qualified nurse without re-entering your booking details.
-        </p>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="px-8 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition flex items-center justify-center gap-2 shrink-0"
+        >
+          <span>{submitting ? "Confirming Visit..." : "Schedule Home Visit"}</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
-
-      {errorMessage && (
-        <div className="p-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs">
-          {errorMessage}
-        </div>
-      )}
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={submitting || !selectedNurseId}
-        className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-1.5"
-      >
-        <span>Submit Booking & Send 15-Min Offer</span>
-        <ChevronRight className="w-4 h-4" />
-      </button>
     </form>
   );
 }

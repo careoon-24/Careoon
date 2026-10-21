@@ -87,6 +87,20 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  // Patient Health Profile & Auto-fill Address
+  age                     Int?
+  gender                  String?
+  bloodGroup              String?
+  addressStreet           String?
+  addressApartment        String?
+  addressCity             String?           @default("Sangli")
+  addressPincode          String?           @default("416416")
+  emergencyContactName    String?
+  emergencyContactPhone   String?
+  chronicConditions       String?
+  allergies               String?
+  savedFamilyMembers      String?           // JSON array of saved family members
+
   nurseProfile   NurseProfile?
   patientBookings Booking[]       @relation("PatientBookings")
   patientReviews  Review[]        @relation("PatientReviews")

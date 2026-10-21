@@ -143,68 +143,91 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 2. HERO GLASSMORPHIC BANNER (Expanded 2-Column Desktop Grid) */}
+      {/* 2. HERO GLASSMORPHIC BANNER (Flagship Health-Tech Design) */}
       <div className="max-w-6xl mx-auto px-4 pt-6">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-800 via-teal-900 to-slate-950 text-white p-6 sm:p-10 shadow-2xl shadow-teal-950/20">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-950 to-slate-950 text-white p-6 sm:p-10 shadow-2xl shadow-teal-950/40 border border-teal-500/20">
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             <div className="lg:col-span-7 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-teal-200">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 backdrop-blur-md border border-teal-500/30 text-xs font-bold text-teal-300">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                Sangli & Miraj Certified Home Care Nurses
+                Sangli & Miraj Doctor-Prescribed Home Nursing Network
               </div>
 
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
-                Hospital-Grade Nursing Care, <br />
-                <span className="text-teal-300">Directly at Your Home in Sangli</span>
+                Hospital-Grade Clinical Care, <br />
+                <span className="bg-gradient-to-r from-teal-300 via-emerald-300 to-cyan-300 bg-clip-text text-transparent">
+                  Directly at Your Home in Sangli
+                </span>
               </h1>
 
-              <p className="text-xs sm:text-sm text-teal-100/80 max-w-xl leading-relaxed">
-                Connect directly with background-verified, Maharashtra Nursing Council registered nurses across Sangli, Miraj, Vishrambag & Kupwad for sterile wound dressings, IV therapy, catheterization, and elderly care.
+              <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+                Connect directly with background-cleared, Maharashtra Nursing Council registered ICU nurses across Sangli, Miraj, Vishrambag & Kupwad for sterile wound dressings, IV infusions, catheterization, and post-surgery care.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 pt-2 text-xs font-semibold text-teal-200">
-                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-                  <CheckCircle2 className="w-4 h-4 text-teal-400" />
+              <div className="flex flex-wrap items-center gap-2.5 pt-2 text-xs font-bold text-teal-200">
+                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   100% MNC Verified Nurses
                 </span>
-                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-                  <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                  Transparent Fixed Rates
+                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  Single-Use Sterile Kits
                 </span>
-                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-                  <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                  15-Min Confirmation Guarantee
+                <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  15-Min Response Guarantee
                 </span>
               </div>
             </div>
 
-            {/* Right Quick Highlights (Desktop) */}
+            {/* Right Quick Clinical Guarantees Card (Desktop) */}
             <div className="lg:col-span-5 hidden lg:block">
-              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 text-white space-y-4 shadow-xl">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-teal-300">
-                  Careoon Clinical Standards
-                </h3>
-                <div className="space-y-3 text-xs">
+              <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-3xl p-6 text-white space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-teal-400" />
+                    <span>Sangli Clinical Protocols</span>
+                  </h3>
+                  <span className="text-[10px] bg-teal-400/20 text-teal-200 font-bold px-2 py-0.5 rounded-full border border-teal-400/30">
+                    Hospital Standard
+                  </span>
+                </div>
+
+                <div className="space-y-3.5 text-xs">
                   <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-teal-300 shrink-0 mt-0.5" />
+                    <div className="w-7 h-7 rounded-lg bg-teal-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <ShieldCheck className="w-4 h-4 text-teal-300" />
+                    </div>
                     <div>
-                      <div className="font-bold">Verified Nursing Degree & License</div>
-                      <div className="text-teal-200/80 text-[11px]">Strict verification against state clinical registries before activation.</div>
+                      <div className="font-bold text-white">MNC License & Police Verification</div>
+                      <div className="text-slate-300 text-[11px] leading-relaxed">
+                        Every nurse holds active Maharashtra Nursing Council credentials and ICU hospital experience.
+                      </div>
                     </div>
                   </div>
+
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock className="w-4 h-4 text-amber-300" />
+                    </div>
                     <div>
-                      <div className="font-bold">15-Minute Response Protocol</div>
-                      <div className="text-teal-200/80 text-[11px]">Nurse confirms in 15 mins. If unavailable, instant one-tap reselection.</div>
+                      <div className="font-bold text-white">15-Minute Guaranteed Confirmation</div>
+                      <div className="text-slate-300 text-[11px] leading-relaxed">
+                        Live radar connects you with the nearest nurse in Sangli-Miraj within 15 minutes.
+                      </div>
                     </div>
                   </div>
+
                   <div className="flex items-start gap-3">
-                    <Activity className="w-5 h-5 text-emerald-300 shrink-0 mt-0.5" />
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Activity className="w-4 h-4 text-emerald-300" />
+                    </div>
                     <div>
-                      <div className="font-bold">Doorstep In-App UPI & Cash Payment</div>
-                      <div className="text-teal-200/80 text-[11px]">Pay safely after clinical completion with digital invoice & audit log.</div>
+                      <div className="font-bold text-white">Digital Health Charting & Doorstep Pay</div>
+                      <div className="text-slate-300 text-[11px] leading-relaxed">
+                        Nurse logs vitals (BP, Sugar, SpO2) into your health profile. Pay via in-app UPI QR or cash.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -213,8 +236,9 @@ export default function HomePage() {
 
           </div>
 
-          {/* Decorative glowing sphere */}
-          <div className="absolute -right-12 -bottom-12 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl pointer-events-none" />
+          {/* Decorative ambient medical glow */}
+          <div className="absolute -right-16 -bottom-16 w-96 h-96 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -top-16 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         </div>
       </div>
 
@@ -303,25 +327,25 @@ export default function HomePage() {
             {filteredServices.map((service) => (
               <div
                 key={service.id}
-                className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm hover:shadow-lg hover:border-teal-300 transition-all flex flex-col justify-between gap-4 group"
+                className="group bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-teal-400 hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between gap-4"
               >
                 <div className="space-y-3">
                   {/* Badge row */}
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-100">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                       <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-                      MNC Nurse Required
+                      MNC Licensed ICU Nurse
                     </span>
                     <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span>4.9</span>
-                      <span className="text-[10px] text-slate-400 font-normal">(120+ visits)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">(Sangli)</span>
                     </div>
                   </div>
 
                   {/* Title & Details */}
                   <div>
-                    <h3 className="font-extrabold text-base text-slate-900 group-hover:text-teal-700 transition leading-snug">
+                    <h3 className="font-black text-base text-slate-900 group-hover:text-teal-700 transition leading-snug">
                       {service.name}
                     </h3>
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
@@ -330,13 +354,13 @@ export default function HomePage() {
                   </div>
 
                   {/* Meta details */}
-                  <div className="flex items-center gap-3 text-xs text-slate-500 pt-1 border-t border-slate-100">
-                    <span className="flex items-center gap-1 font-medium">
+                  <div className="flex items-center gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
+                    <span className="flex items-center gap-1 font-semibold text-slate-700">
                       <Clock className="w-3.5 h-3.5 text-teal-600" />
                       {service.durationMinutes} mins
                     </span>
                     <span className="text-slate-300">•</span>
-                    <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+                    <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/60 text-[11px]">
                       Sterile Kit Included
                     </span>
                   </div>
@@ -345,8 +369,8 @@ export default function HomePage() {
                 {/* Price & Action Row */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Fixed Rate</span>
-                    <span className="text-lg font-black text-slate-900">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Doorstep Rate</span>
+                    <span className="text-xl font-black text-slate-900">
                       {formatCurrency(service.basePrice)}
                     </span>
                   </div>
@@ -354,9 +378,9 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => handleBookClick(service.id)}
-                    className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-95 transition flex items-center gap-1.5"
+                    className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-extrabold text-xs shadow-md shadow-teal-600/25 active:scale-95 transition flex items-center gap-1.5"
                   >
-                    <span>Book Care</span>
+                    <span>Book Home Visit</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
