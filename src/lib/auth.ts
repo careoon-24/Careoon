@@ -7,6 +7,9 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 export const AUTH_COOKIE_NAME = 'careoon_session';
+export const ADMIN_COOKIE_NAME = 'careoon_admin_session';
+export const NURSE_COOKIE_NAME = 'careoon_nurse_session';
+export const PATIENT_COOKIE_NAME = 'careoon_patient_session';
 
 export interface SessionPayload {
   userId: string;
@@ -32,15 +35,77 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
   }
 }
 
-export async function getSession(): Promise<SessionPayload | null> {
+export async function getSession(roleHint?: 'ADMIN' | 'NURSE' | 'PATIENT'): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return null;
-  return await verifySessionToken(token);
+
+  // 1. If explicit roleHint provided, prioritize that role's dedicated cookie
+  if (roleHint === 'ADMIN') {
+    const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+    if (token) {
+      const s = await verifySessionToken(token);
+      if (s && s.role === 'ADMIN') return s;
+    }
+  } else if (roleHint === 'NURSE') {
+    const token = cookieStore.get(NURSE_COOKIE_NAME)?.value;
+    if (token) {
+      const s = await verifySessionToken(token);
+      if (s && (s.role === 'NURSE' || s.role === 'ADMIN')) return s;
+    }
+  } else if (roleHint === 'PATIENT') {
+    const token = cookieStore.get(PATIENT_COOKIE_NAME)?.value;
+    if (token) {
+      const s = await verifySessionToken(token);
+      if (s) return s;
+    }
+  }
+
+  // 2. Auto-detect from referer header so 3 windows (Admin, Nurse, Patient) can run simultaneously
+  try {
+    const { headers } = await import('next/headers');
+    const headerList = await headers();
+    const referer = headerList.get('referer') || '';
+
+    if (referer.includes('/admin')) {
+      const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+      if (token) {
+        const s = await verifySessionToken(token);
+        if (s && s.role === 'ADMIN') return s;
+      }
+    } else if (referer.includes('/nurse')) {
+      const token = cookieStore.get(NURSE_COOKIE_NAME)?.value;
+      if (token) {
+        const s = await verifySessionToken(token);
+        if (s && (s.role === 'NURSE' || s.role === 'ADMIN')) return s;
+      }
+    } else if (referer.includes('/patient')) {
+      const token = cookieStore.get(PATIENT_COOKIE_NAME)?.value;
+      if (token) {
+        const s = await verifySessionToken(token);
+        if (s) return s;
+      }
+    }
+  } catch {
+    // headers() might not be supported in some edge contexts
+  }
+
+  // 3. Fallback checks: any valid session cookie
+  const fallbackTokens = [
+    cookieStore.get(ADMIN_COOKIE_NAME)?.value,
+    cookieStore.get(NURSE_COOKIE_NAME)?.value,
+    cookieStore.get(PATIENT_COOKIE_NAME)?.value,
+    cookieStore.get(AUTH_COOKIE_NAME)?.value,
+  ].filter(Boolean) as string[];
+
+  for (const t of fallbackTokens) {
+    const s = await verifySessionToken(t);
+    if (s) return s;
+  }
+
+  return null;
 }
 
-export async function getCurrentUser() {
-  const session = await getSession();
+export async function getCurrentUser(roleHint?: 'ADMIN' | 'NURSE' | 'PATIENT') {
+  const session = await getSession(roleHint);
   if (!session) return null;
 
   const user = await prisma.user.findUnique({

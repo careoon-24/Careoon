@@ -28,6 +28,36 @@ export async function createBookingAction(formData: {
     throw new Error('You must be logged in to create a booking.');
   }
 
+  // 1. Strict 10-digit Indian Mobile Phone Validation
+  const cleanPhone = (formData.patientContactPhone || '').replace(/\D/g, '').trim();
+  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+    throw new Error('कृपया वैध १० अंकी मोबाईल नंबर टाका (उदा. 98220XXXXX)');
+  }
+
+  // 2. Strict Date & Time Validation: Must be strictly in the future
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  if (formData.scheduledDate < todayStr) {
+    throw new Error('मागील तारखेची अपॉइंटमेंट बुक करता येत नाही. कृपया आजची किंवा पुढील तारीख निवडा (Cannot book appointment for a past date).');
+  }
+
+  if (formData.scheduledDate === todayStr) {
+    const timeMatch = formData.scheduledTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
+      const meridian = timeMatch[3]?.toUpperCase();
+      if (meridian === 'PM' && hours < 12) hours += 12;
+      if (meridian === 'AM' && hours === 12) hours = 0;
+
+      const slotStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+      if (slotStartTime.getTime() <= now.getTime()) {
+        throw new Error('निवडलेली वेळ उलटून गेली आहे. कृपया आजची पुढील वेळ किंवा उद्याची तारीख निवडा (Selected time slot has already passed).');
+      }
+    }
+  }
+
   const service = await prisma.service.findUnique({
     where: { id: formData.serviceId },
   });
@@ -93,7 +123,7 @@ export async function createBookingAction(formData: {
       latitude: formData.latitude || 16.8524,
       longitude: formData.longitude || 74.5815,
       patientNotes: formData.patientNotes,
-      patientContactPhone: formData.patientContactPhone,
+      patientContactPhone: cleanPhone,
       patientName: formData.patientName,
       patientAge: formData.patientAge,
       patientGender: formData.patientGender,

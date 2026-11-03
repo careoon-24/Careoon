@@ -52,6 +52,22 @@ export async function updatePatientProfileAction(data: {
   const session = await getSession();
   if (!session) throw new Error('Unauthorized');
 
+  if (data.phone) {
+    const clean = data.phone.replace(/\D/g, '').trim();
+    if (!/^[6-9]\d{9}$/.test(clean)) {
+      throw new Error('कृपया वैध १० अंकी मोबाईल नंबर टाका (उदा. 98220XXXXX)');
+    }
+    data.phone = clean;
+  }
+
+  if (data.emergencyContactPhone) {
+    const clean = data.emergencyContactPhone.replace(/\D/g, '').trim();
+    if (!/^[6-9]\d{9}$/.test(clean)) {
+      throw new Error('कृपया वैध १० अंकी आपत्कालीन मोबाईल नंबर टाका');
+    }
+    data.emergencyContactPhone = clean;
+  }
+
   const updated = await prisma.user.update({
     where: { id: session.userId },
     data: {

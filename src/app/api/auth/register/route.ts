@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import * as bcrypt from 'bcryptjs';
-import { createSessionToken, AUTH_COOKIE_NAME } from '@/lib/auth';
+import {
+  createSessionToken,
+  AUTH_COOKIE_NAME,
+  PATIENT_COOKIE_NAME,
+  NURSE_COOKIE_NAME,
+} from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +14,32 @@ export async function POST(req: NextRequest) {
 
     if (!email || !phone || !fullName || !password) {
       return NextResponse.json(
-        { error: 'All fields (name, email, phone, password) are required' },
+        { error: 'सर्व फील्ड्स (नाव, ईमेल, मोबाईल, पासवर्ड) आवश्यक आहेत' },
+        { status: 400 }
+      );
+    }
+
+    // Strict 10-digit Indian Mobile Validation
+    const cleanPhone = String(phone).replace(/\D/g, '').trim();
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return NextResponse.json(
+        { error: 'कृपया वैध १० अंकी मोबाईल नंबर टाका (उदा. 98220XXXXX)' },
+        { status: 400 }
+      );
+    }
+
+    // Clean Email validation
+    const cleanEmail = String(email).toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return NextResponse.json(
+        { error: 'कृपया वैध ईमेल ॲड्रेस टाका (उदा. name@example.com)' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'पासवर्ड किमान ६ अक्षरांचा असणे आवश्यक आहे' },
         { status: 400 }
       );
     }
@@ -18,13 +48,13 @@ export async function POST(req: NextRequest) {
 
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [{ email: email.toLowerCase().trim() }, { phone: phone.trim() }],
+        OR: [{ email: cleanEmail }, { phone: cleanPhone }],
       },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'An account with this email or phone already exists' },
+        { error: 'या मोबाईल नंबर किंवा ईमेलवर आधीच खाते नोंदणीकृत आहे' },
         { status: 409 }
       );
     }
@@ -34,8 +64,8 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.create({
       data: {
-        email: email.toLowerCase().trim(),
-        phone: phone.trim(),
+        email: cleanEmail,
+        phone: cleanPhone,
         fullName: fullName.trim(),
         role: assignedRole,
         passwordHash,
@@ -78,15 +108,33 @@ export async function POST(req: NextRequest) {
       redirectUrl: assignedRole === 'NURSE' ? '/nurse' : '/patient',
     });
 
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    };
+
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
       value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+      ...cookieOptions,
     });
+
+    if (assignedRole === 'NURSE') {
+      response.cookies.set({
+        name: NURSE_COOKIE_NAME,
+        value: token,
+        ...cookieOptions,
+      });
+    } else {
+      response.cookies.set({
+        name: PATIENT_COOKIE_NAME,
+        value: token,
+        ...cookieOptions,
+      });
+    }
 
     return response;
   } catch (error) {

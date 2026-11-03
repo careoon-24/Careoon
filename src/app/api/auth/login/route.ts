@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import * as bcrypt from 'bcryptjs';
-import { createSessionToken, AUTH_COOKIE_NAME } from '@/lib/auth';
+import {
+  createSessionToken,
+  AUTH_COOKIE_NAME,
+  ADMIN_COOKIE_NAME,
+  NURSE_COOKIE_NAME,
+  PATIENT_COOKIE_NAME,
+} from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Email/Phone and password are required' },
         { status: 400 }
       );
     }
@@ -39,7 +45,7 @@ export async function POST(req: NextRequest) {
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatch) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'चुकीचा पासवर्ड / Incorrect password' },
         { status: 401 }
       );
     }
@@ -69,15 +75,41 @@ export async function POST(req: NextRequest) {
           : '/patient',
     });
 
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    };
+
+    // 1. Set general active session
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
       value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      ...cookieOptions,
     });
+
+    // 2. Set dedicated role-specific session so multiple windows can stay logged in simultaneously!
+    if (user.role === 'ADMIN') {
+      response.cookies.set({
+        name: ADMIN_COOKIE_NAME,
+        value: token,
+        ...cookieOptions,
+      });
+    } else if (user.role === 'NURSE') {
+      response.cookies.set({
+        name: NURSE_COOKIE_NAME,
+        value: token,
+        ...cookieOptions,
+      });
+    } else if (user.role === 'PATIENT') {
+      response.cookies.set({
+        name: PATIENT_COOKIE_NAME,
+        value: token,
+        ...cookieOptions,
+      });
+    }
 
     return response;
   } catch (error) {

@@ -33,6 +33,20 @@ function PatientLoginFormContent() {
     setError(null);
     setLoading(true);
 
+    if (activeTab === 'REGISTER') {
+      const cleanPhone = phone.replace(/\D/g, '').trim();
+      if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+        setError('कृपया वैध १० अंकी भारतीय मोबाईल नंबर टाका (उदा. 9822012345)');
+        setLoading(false);
+        return;
+      }
+      if (password.length < 6) {
+        setError('पासवर्ड किमान ६ अक्षरांचा असणे आवश्यक आहे');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       if (activeTab === 'LOGIN') {
         const res = await fetch('/api/auth/login', {
@@ -47,12 +61,13 @@ function PatientLoginFormContent() {
         router.push(redirectPath || data.redirectUrl);
         router.refresh();
       } else {
+        const cleanPhone = phone.replace(/\D/g, '').trim();
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
-            phone,
+            phone: cleanPhone,
             fullName,
             password,
             role: 'PATIENT',
@@ -171,16 +186,23 @@ function PatientLoginFormContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Mobile Phone (मोबाईल नंबर) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Mobile Phone (१० अंकी मोबाईल नंबर) *
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {phone.length}/10 digits
+                    </span>
+                  </div>
                   <div className="relative">
                     <input
                       type="tel"
                       required
+                      maxLength={10}
+                      inputMode="numeric"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="98220XXXXX"
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="98220XXXXX (10 digits)"
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-teal-600 text-sm font-medium text-slate-900 outline-none"
                     />
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />

@@ -89,7 +89,10 @@ export async function adminAddNurseAction(data: {
     throw new Error('Only administrators can onboard verified nurses.');
   }
 
-  const cleanPhone = data.phone.trim();
+  const cleanPhone = data.phone.replace(/\D/g, '').trim();
+  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+    throw new Error('कृपया वैध १० अंकी मोबाईल नंबर टाका (उदा. 98220XXXXX)');
+  }
   const cleanEmail = data.email.trim().toLowerCase();
 
   // Check if user already exists

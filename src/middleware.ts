@@ -6,12 +6,24 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 const AUTH_COOKIE_NAME = 'careoon_session';
+const ADMIN_COOKIE_NAME = 'careoon_admin_session';
+const NURSE_COOKIE_NAME = 'careoon_nurse_session';
+const PATIENT_COOKIE_NAME = 'careoon_patient_session';
 
 interface SessionPayload {
   userId: string;
   email: string;
   fullName: string;
   role: 'PATIENT' | 'NURSE' | 'ADMIN';
+}
+
+async function verifyToken(token: string): Promise<SessionPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return payload as unknown as SessionPayload;
+  } catch {
+    return null;
+  }
 }
 
 export async function middleware(req: NextRequest) {
@@ -40,50 +52,64 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
-
-  // Dedicated redirects per portal role
-  if (!token) {
-    let targetLogin = '/login';
-    if (isAdminPath) targetLogin = '/admin/login';
-    else if (isNursePath) targetLogin = '/nurse/login';
-
-    const loginUrl = new URL(targetLogin, req.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    const session = payload as unknown as SessionPayload;
-
-    // RBAC: Admin Portal strictly requires ADMIN role
-    if (isAdminPath && session.role !== 'ADMIN') {
-      const deniedUrl = new URL('/unauthorized', req.url);
-      deniedUrl.searchParams.set('reason', 'admin_only');
-      return NextResponse.redirect(deniedUrl);
+  // 1. RBAC for ADMIN Portal: Check dedicated admin session cookie first
+  if (isAdminPath) {
+    const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value || req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    if (!adminToken) {
+      const loginUrl = new URL('/admin/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
-    // RBAC: Nurse Portal requires NURSE or ADMIN role
-    if (isNursePath && session.role !== 'NURSE' && session.role !== 'ADMIN') {
-      const deniedUrl = new URL('/unauthorized', req.url);
-      deniedUrl.searchParams.set('reason', 'nurse_only');
-      return NextResponse.redirect(deniedUrl);
+    const session = await verifyToken(adminToken);
+    if (!session || session.role !== 'ADMIN') {
+      const loginUrl = new URL('/admin/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
-    // Request is authenticated and authorized
     return NextResponse.next();
-  } catch (err) {
-    // Invalid/expired token
-    console.error('Middleware JWT error:', err);
-    let targetLogin = '/login';
-    if (isAdminPath) targetLogin = '/admin/login';
-    else if (isNursePath) targetLogin = '/nurse/login';
-
-    const loginUrl = new URL(targetLogin, req.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
   }
+
+  // 2. RBAC for NURSE Portal: Check dedicated nurse session cookie first
+  if (isNursePath) {
+    const nurseToken = req.cookies.get(NURSE_COOKIE_NAME)?.value || req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    if (!nurseToken) {
+      const loginUrl = new URL('/nurse/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const session = await verifyToken(nurseToken);
+    if (!session || (session.role !== 'NURSE' && session.role !== 'ADMIN')) {
+      const loginUrl = new URL('/nurse/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    return NextResponse.next();
+  }
+
+  // 3. RBAC for PATIENT Private Portal: Check dedicated patient session cookie
+  if (isPatientPrivatePath) {
+    const patientToken = req.cookies.get(PATIENT_COOKIE_NAME)?.value || req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    if (!patientToken) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const session = await verifyToken(patientToken);
+    if (!session) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    return NextResponse.next();
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

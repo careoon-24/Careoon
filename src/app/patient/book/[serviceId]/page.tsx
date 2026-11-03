@@ -56,9 +56,37 @@ export default function BookServicePage() {
   const [postalCode, setPostalCode] = useState<string>("416416");
 
   // Date & Time Slot
-  const todayStr = new Date().toISOString().split("T")[0];
-  const [scheduledDate, setScheduledDate] = useState<string>(todayStr);
-  const [scheduledTimeSlot, setScheduledTimeSlot] = useState<string>("10:00 - 11:30 AM");
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+  const TIME_SLOTS = [
+    { label: "Morning (08:00 - 09:30 AM)", value: "08:00 - 09:30 AM", startHour: 8, startMin: 0 },
+    { label: "Morning (10:00 - 11:30 AM)", value: "10:00 - 11:30 AM", startHour: 10, startMin: 0 },
+    { label: "Afternoon (01:00 - 02:30 PM)", value: "01:00 - 02:30 PM", startHour: 13, startMin: 0 },
+    { label: "Evening (04:00 - 05:30 PM)", value: "04:00 - 05:30 PM", startHour: 16, startMin: 0 },
+    { label: "Night (06:30 - 08:00 PM)", value: "06:30 - 08:00 PM", startHour: 18, startMin: 30 },
+  ];
+
+  const isSlotAvailable = (slot: typeof TIME_SLOTS[0], dateStr: string) => {
+    if (dateStr > todayStr) return true;
+    if (dateStr < todayStr) return false;
+    // For today: slot start must be at least 15 minutes after current time
+    const slotTime = new Date();
+    slotTime.setHours(slot.startHour, slot.startMin, 0, 0);
+    return slotTime.getTime() > Date.now() + 15 * 60 * 1000;
+  };
+
+  // Initial calculation: check if any slot is available today; if none, default to tomorrow
+  const hasSlotToday = TIME_SLOTS.some((s) => isSlotAvailable(s, todayStr));
+  const defaultDate = hasSlotToday ? todayStr : tomorrowStr;
+  const firstValidSlot = TIME_SLOTS.find((s) => isSlotAvailable(s, defaultDate))?.value || "10:00 - 11:30 AM";
+
+  const [scheduledDate, setScheduledDate] = useState<string>(defaultDate);
+  const [scheduledTimeSlot, setScheduledTimeSlot] = useState<string>(firstValidSlot);
   const [clinicalNotes, setClinicalNotes] = useState<string>("");
 
   // Nurse Selection & Submit
@@ -203,9 +231,28 @@ export default function BookServicePage() {
       return;
     }
 
+    const cleanPhone = (patientPhone || userProfile?.phone || '').replace(/\D/g, '').trim();
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMessage("कृपया रुग्णाशी किंवा कुटुंबियांशी संपर्क साधण्यासाठी वैध १० अंकी मोबाईल नंबर टाका (उदा. 9822012345).");
+      return;
+    }
+
     if (!street.trim()) {
       setErrorMessage("Doorstep address / street in Sangli is required.");
       return;
+    }
+
+    if (scheduledDate < todayStr) {
+      setErrorMessage("मागील तारखेची अपॉइंटमेंट बुक करता येत नाही. कृपया आजची किंवा पुढील तारीख निवडा.");
+      return;
+    }
+
+    if (scheduledDate === todayStr) {
+      const chosenSlot = TIME_SLOTS.find((s) => s.value === scheduledTimeSlot);
+      if (chosenSlot && !isSlotAvailable(chosenSlot, scheduledDate)) {
+        setErrorMessage("निवडलेली वेळ उलटून गेली आहे. कृपया आजची पुढील वेळ किंवा उद्याची तारीख निवडा.");
+        return;
+      }
     }
 
     if (!selectedNurseId) {
@@ -225,7 +272,7 @@ export default function BookServicePage() {
         addressLine: fullAddress,
         city: city || "Sangli",
         postalCode: postalCode || "416416",
-        patientContactPhone: patientPhone || userProfile?.phone || "+919822000000",
+        patientContactPhone: cleanPhone,
         patientName: `${patientName}${bookingRecipient === "FAMILY" ? ` (${familyRelationship})` : ""}`,
         patientNotes: clinicalNotes,
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
@@ -395,7 +442,7 @@ export default function BookServicePage() {
         )}
 
         {/* Patient Details Form Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">
               Patient Full Name *
@@ -407,6 +454,27 @@ export default function BookServicePage() {
               onChange={(e) => setPatientName(e.target.value)}
               placeholder="e.g. Sunita Patil"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-slate-700">
+                Contact Mobile (१० अंकी मोबाईल) *
+              </label>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {patientPhone.length}/10
+              </span>
+            </div>
+            <input
+              type="tel"
+              required
+              maxLength={10}
+              inputMode="numeric"
+              value={patientPhone}
+              onChange={(e) => setPatientPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="98220XXXXX (10 digits)"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
             />
           </div>
 
@@ -469,35 +537,62 @@ export default function BookServicePage() {
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              Date of Clinical Visit *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-slate-700">
+                Date of Clinical Visit (भेट दिनांक) *
+              </label>
+              {scheduledDate === todayStr && (
+                <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                  Today (आज)
+                </span>
+              )}
+            </div>
             <input
               type="date"
               required
               min={todayStr}
               value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold"
+              onChange={(e) => {
+                const newDate = e.target.value;
+                setScheduledDate(newDate);
+                const currentSlotObj = TIME_SLOTS.find((s) => s.value === scheduledTimeSlot);
+                if (!currentSlotObj || !isSlotAvailable(currentSlotObj, newDate)) {
+                  const firstAvail = TIME_SLOTS.find((s) => isSlotAvailable(s, newDate));
+                  if (firstAvail) setScheduledTimeSlot(firstAvail.value);
+                }
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Preferred Time Window *
+              Preferred Time Window (वेळ) *
             </label>
             <select
               value={scheduledTimeSlot}
               onChange={(e) => setScheduledTimeSlot(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-              <option value="08:00 - 09:30 AM">Morning (08:00 - 09:30 AM)</option>
-              <option value="10:00 - 11:30 AM">Morning (10:00 - 11:30 AM)</option>
-              <option value="01:00 - 02:30 PM">Afternoon (01:00 - 02:30 PM)</option>
-              <option value="04:00 - 05:30 PM">Evening (04:00 - 05:30 PM)</option>
-              <option value="06:30 - 08:00 PM">Night (06:30 - 08:00 PM)</option>
+              {TIME_SLOTS.map((slot) => {
+                const isAvail = isSlotAvailable(slot, scheduledDate);
+                return (
+                  <option key={slot.value} value={slot.value} disabled={!isAvail}>
+                    {slot.label} {!isAvail ? "— [वेळ उलटून गेली / Passed]" : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
+
+          {scheduledDate === todayStr && !TIME_SLOTS.some((s) => isSlotAvailable(s, todayStr)) && (
+            <div className="sm:col-span-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                आजच्या सर्व अपॉइंटमेंट वेळा पूर्ण झाल्या आहेत. कृपया पुढील दिवसाची (उद्याची) तारीख निवडा.
+              </span>
+            </div>
+          )}
 
           <div className="sm:col-span-2">
             <label className="block font-bold text-slate-700 mb-1">
