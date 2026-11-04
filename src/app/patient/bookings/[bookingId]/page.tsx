@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -21,18 +21,27 @@ import {
   CreditCard,
   QrCode,
   Sparkles,
+  Smartphone,
+  AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
-export default function PatientBookingDetailPage() {
+function PatientBookingDetailContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const bookingId = params?.bookingId as string;
+
+  const paymentStatusQuery = searchParams.get('payment');
+  const paymentTxnQuery = searchParams.get('txn');
 
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [justConfirmed, setJustConfirmed] = useState<boolean>(false);
   const [previousStatus, setPreviousStatus] = useState<string>('');
+  const [isInitiatingPayment, setIsInitiatingPayment] = useState<boolean>(false);
+  const [paymentError, setPaymentError] = useState<string>('');
 
   const fetchLiveBooking = async () => {
     try {
@@ -65,6 +74,30 @@ export default function PatientBookingDetailPage() {
     const interval = setInterval(fetchLiveBooking, 2500); // Poll live state every 2.5s
     return () => clearInterval(interval);
   }, [bookingId, previousStatus]);
+
+  const handlePayNowWithPhonePe = async () => {
+    setIsInitiatingPayment(true);
+    setPaymentError('');
+
+    try {
+      const res = await fetch('/api/payments/phonepe/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        setPaymentError(data.error || 'Failed to connect to PhonePe gateway.');
+        setIsInitiatingPayment(false);
+      }
+    } catch (err: any) {
+      setPaymentError(err.message || 'Payment initiation failed.');
+      setIsInitiatingPayment(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -99,20 +132,53 @@ export default function PatientBookingDetailPage() {
   );
 
   return (
-    <div className="space-y-4 pb-12 max-w-md mx-auto">
+    <div className="space-y-4 pb-12 max-w-md mx-auto px-4 pt-4">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.push('/patient/bookings')}
-          className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800"
+          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-bold"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          My Bookings
+          <span>My Bookings</span>
         </button>
         <span className="text-[11px] font-mono font-bold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
           {booking.bookingCode}
         </span>
       </div>
+
+      {/* PHONEPE PAYMENT SUCCESS BANNER */}
+      {paymentStatusQuery === 'success' && (
+        <div className="p-4 rounded-3xl bg-emerald-600 text-white shadow-xl flex items-center gap-3 animate-in fade-in">
+          <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-6 h-6 text-white" />
+          </div>
+          <div className="space-y-0.5">
+            <h4 className="text-sm font-black">✓ PhonePe द्वारे पेमेंट यशस्वी झाले!</h4>
+            <p className="text-xs text-emerald-100">
+              Payment Verified. सांगलीतील परिचारिकेला (Staff Nurse) भेटीची सूचना पाठवण्यात आली आहे.
+            </p>
+            {paymentTxnQuery && (
+              <span className="text-[10px] font-mono text-emerald-200 block">
+                Txn: {paymentTxnQuery}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* PAYMENT FAILED BANNER */}
+      {paymentStatusQuery === 'failed' && (
+        <div className="p-4 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 shadow-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold text-rose-900">पेमेंट पूर्ण झाले नाही (Payment Not Completed)</h4>
+            <p className="text-[11px] text-rose-700">
+              तुमचे पेमेंट रद्द किंवा अयशस्वी झाले. तुम्ही खालील बटनावर क्लिक करून पुन्हा फोनपे द्वारे पैसे भरू शकता.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* LIVE SYNC CONFIRMATION ALERT BANNER */}
       {justConfirmed && (
@@ -137,6 +203,7 @@ export default function PatientBookingDetailPage() {
               Booking Status
             </span>
             <h2 className="text-base font-extrabold text-slate-900 capitalize">
+              {booking.status === 'PAYMENT_PENDING' && 'Awaiting PhonePe Payment...'}
               {booking.status === 'SEARCHING_NURSE' && 'Searching Nearby Nurse...'}
               {booking.status === 'NURSE_OFFERED' && 'Waiting for Nurse Confirmation...'}
               {booking.status === 'CONFIRMED' && 'Nurse Assigned & Confirmed'}
@@ -200,7 +267,7 @@ export default function PatientBookingDetailPage() {
         </div>
       </div>
 
-      {/* ASSIGNED NURSE CARD (Appears immediately when nurse accepts!) */}
+      {/* ASSIGNED NURSE CARD */}
       {booking.assignedNurse && (
         <div className="p-4 rounded-3xl bg-gradient-to-br from-teal-50 to-white border-2 border-teal-500/20 shadow-md space-y-3">
           <div className="flex items-center justify-between">
@@ -243,7 +310,7 @@ export default function PatientBookingDetailPage() {
         </div>
       )}
 
-      {/* CLINICAL VITALS REPORT (Saved permanently for patient records!) */}
+      {/* CLINICAL VITALS REPORT */}
       {booking.status === 'COMPLETED' && vitals && (
         <div className="p-4 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
@@ -281,17 +348,17 @@ export default function PatientBookingDetailPage() {
       <div className="p-4 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <CreditCard className="w-4 h-4 text-slate-600" />
-            <h3 className="text-xs font-bold text-slate-900">Payment Reconciliation</h3>
+            <CreditCard className="w-4 h-4 text-purple-600" />
+            <h3 className="text-xs font-bold text-slate-900">PhonePe Payment Details</h3>
           </div>
           <span
             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
               booking.paymentStatus === 'PAID'
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-amber-100 text-amber-800'
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                : 'bg-amber-100 text-amber-800 border border-amber-200'
             }`}
           >
-            {booking.paymentStatus === 'PAID' ? '✓ PAID IN FULL' : 'PAYABLE AT DOORSTEP'}
+            {booking.paymentStatus === 'PAID' ? '✓ PAID IN FULL (PhonePe)' : 'PAYMENT PENDING'}
           </span>
         </div>
 
@@ -305,10 +372,68 @@ export default function PatientBookingDetailPage() {
           </span>
         </div>
 
-        <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-100">
-          Payment is collected by the verified nurse upon completion via in-app UPI QR or cash.
-        </div>
+        {paymentError && (
+          <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{paymentError}</span>
+          </div>
+        )}
+
+        {booking.paymentStatus === 'PAID' ? (
+          <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px]">
+                ✓
+              </div>
+              <div>
+                <span className="font-bold text-emerald-950 block">PhonePe Digital Verification</span>
+                <span className="text-[10px] text-emerald-700 font-mono">
+                  {booking.payments?.[0]?.paymentRef || 'TXN-CONFIRMED'}
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+              Verified
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-2 pt-1 border-t border-slate-100">
+            <button
+              onClick={handlePayNowWithPhonePe}
+              disabled={isInitiatingPayment}
+              className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isInitiatingPayment ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Smartphone className="w-4 h-4" />
+                  <span>
+                    Pay {formatCurrency(booking.totalPatientAmount || booking.servicePrice)} via PhonePe UPI
+                  </span>
+                </>
+              )}
+            </button>
+            <p className="text-[10px] text-slate-400 text-center">
+              Instant 256-bit encrypted checkout via PhonePe / GPay / UPI / Cards
+            </p>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+export default function PatientBookingDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-teal-600/20 border-t-teal-600 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <PatientBookingDetailContent />
+    </Suspense>
   );
 }

@@ -22,6 +22,7 @@ export async function createBookingAction(formData: {
   patientGender?: string;
   tipAmount?: number;
   couponCode?: string;
+  paymentMode?: 'PHONEPE_ONLINE' | 'CASH_AFTER_CARE';
 }) {
   const session = await getSession();
   if (!session) {
@@ -135,13 +136,16 @@ export async function createBookingAction(formData: {
       couponCode: appliedCouponCode,
       discountAmount,
       totalPatientAmount: totalAmount,
-      status: formData.nurseId ? 'NURSE_OFFERED' : 'SEARCHING_NURSE',
+      status: formData.paymentMode === 'CASH_AFTER_CARE'
+        ? (formData.nurseId ? 'NURSE_OFFERED' : 'SEARCHING_NURSE')
+        : 'PAYMENT_PENDING',
       paymentStatus: 'UNPAID',
     },
   });
 
-  // If a nurse was selected, create the 15-minute offer
-  if (formData.nurseId) {
+  // If CASH_AFTER_CARE was chosen and nurse was selected, dispatch offer immediately.
+  // Otherwise, if PHONEPE_ONLINE (default), offer is dispatched immediately after payment callback confirms success.
+  if (formData.paymentMode === 'CASH_AFTER_CARE' && formData.nurseId) {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
     await prisma.bookingOffer.create({
       data: {

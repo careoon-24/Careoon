@@ -91,6 +91,7 @@ export default function BookServicePage() {
 
   // Nurse Selection & Submit
   const [selectedNurseId, setSelectedNurseId] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<'PHONEPE_ONLINE' | 'CASH_AFTER_CARE'>('PHONEPE_ONLINE');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
@@ -276,9 +277,25 @@ export default function BookServicePage() {
         patientName: `${patientName}${bookingRecipient === "FAMILY" ? ` (${familyRelationship})` : ""}`,
         patientNotes: clinicalNotes,
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+        paymentMode: paymentMethod,
       });
 
       if (res && res.bookingId) {
+        if (paymentMethod === 'PHONEPE_ONLINE') {
+          // Immediately initiate PhonePe PG Payment
+          const payRes = await fetch('/api/payments/phonepe/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: res.bookingId }),
+          });
+
+          const payData = await payRes.json();
+          if (payData.success && payData.redirectUrl) {
+            window.location.href = payData.redirectUrl;
+            return;
+          }
+        }
+
         router.push(`/patient/bookings/${res.bookingId}`);
         return;
       }
@@ -795,8 +812,8 @@ export default function BookServicePage() {
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-sm">
                 <div>
-                  <span className="font-black text-slate-900 block">Total Due at Doorstep</span>
-                  <span className="text-[10px] text-slate-400">Pay via Cash or UPI after service</span>
+                  <span className="font-black text-slate-900 block">Total Payable Amount (एकूण देय रक्कम)</span>
+                  <span className="text-[10px] text-slate-400">Sangli Doctor-Prescribed Standard Rate</span>
                 </div>
                 <div className="text-right">
                   {appliedCoupon && (
@@ -810,11 +827,85 @@ export default function BookServicePage() {
                 </div>
               </div>
             </div>
+
+            {/* Step 5: Payment Gateway Selection */}
+            <div className="space-y-3 pt-3 border-t border-slate-100">
+              <span className="text-xs font-black uppercase tracking-wider text-teal-700 block">
+                Step 5: Select Payment Method (पेमेंट पद्धत निवडा)
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Option 1: PhonePe PG */}
+                <div
+                  onClick={() => setPaymentMethod('PHONEPE_ONLINE')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'PHONEPE_ONLINE'
+                      ? 'border-purple-600 bg-purple-50/60 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                        Pe
+                      </div>
+                      <div>
+                        <div className="font-black text-xs text-slate-900 flex items-center gap-1.5">
+                          <span>PhonePe Gateway (UPI / QR / GPay)</span>
+                          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full font-bold">
+                            शिफारस (Recommended)
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          सुरक्षित ऑनलाइन पेमेंट • तत्काळ नर्स भेट कन्फर्मेशन
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      paymentMethod === 'PHONEPE_ONLINE' ? 'border-purple-600 bg-purple-600' : 'border-slate-300'
+                    }`}>
+                      {paymentMethod === 'PHONEPE_ONLINE' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 2: Cash on Doorstep */}
+                <div
+                  onClick={() => setPaymentMethod('CASH_AFTER_CARE')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'CASH_AFTER_CARE'
+                      ? 'border-teal-600 bg-teal-50/60 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">
+                        ₹
+                      </div>
+                      <div>
+                        <div className="font-black text-xs text-slate-900">
+                          Cash at Doorstep (उपचारानंतर रोख रक्कम)
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          नर्स घरी आल्यावर उपचार पूर्ण झाल्यावर थेट द्या
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      paymentMethod === 'CASH_AFTER_CARE' ? 'border-teal-600 bg-teal-600' : 'border-slate-300'
+                    }`}>
+                      {paymentMethod === 'CASH_AFTER_CARE' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         );
       })()}
 
-      {/* 5. SUBMIT ORDER BUTTON */}
+      {/* 6. SUBMIT ORDER BUTTON */}
       {(() => {
         const baseRate = service?.basePrice || 0;
         const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
@@ -834,16 +925,30 @@ export default function BookServicePage() {
                 )}
               </div>
               <div className="text-xs text-slate-300 mt-0.5">
-                Total to Pay at Doorstep: <strong className="text-white text-sm">{formatCurrency(finalPayable)}</strong> (Cash/UPI)
+                {paymentMethod === 'PHONEPE_ONLINE' ? (
+                  <span>PhonePe Online Payment: <strong className="text-white text-sm">{formatCurrency(finalPayable)}</strong></span>
+                ) : (
+                  <span>Total to Pay at Doorstep: <strong className="text-white text-sm">{formatCurrency(finalPayable)}</strong> (Cash)</span>
+                )}
               </div>
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition flex items-center justify-center gap-2 shrink-0"
+              className={`px-8 py-3.5 rounded-2xl font-black text-xs shadow-lg active:scale-95 transition flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
+                paymentMethod === 'PHONEPE_ONLINE'
+                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30'
+                  : 'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-teal-500/25'
+              }`}
             >
-              <span>{submitting ? "Confirming Visit..." : `Schedule Visit (${formatCurrency(finalPayable)})`}</span>
+              <span>
+                {submitting
+                  ? "Processing..."
+                  : paymentMethod === 'PHONEPE_ONLINE'
+                  ? `Pay via PhonePe (${formatCurrency(finalPayable)})`
+                  : `Confirm Cash Visit (${formatCurrency(finalPayable)})`}
+              </span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
