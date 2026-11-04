@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 export default function NurseDashboardPage() {
+  const [nurseUser, setNurseUser] = useState<any | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [rejectingOfferId, setRejectingOfferId] = useState<string | null>(null);
@@ -51,6 +52,16 @@ export default function NurseDashboardPage() {
   useEffect(() => {
     fetchBookings();
     const interval = setInterval(fetchBookings, 3000);
+
+    fetch("/api/auth/me?role=NURSE")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.user) {
+          setNurseUser(data.user);
+        }
+      })
+      .catch(() => {});
+
     return () => clearInterval(interval);
   }, []);
 
@@ -163,6 +174,35 @@ export default function NurseDashboardPage() {
           </button>
         </div>
       )}
+
+      {/* Nurse Welcome Banner */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-teal-800 to-teal-600 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xs flex items-center justify-center font-black text-lg border border-white/20 shrink-0">
+            {nurseUser?.fullName ? nurseUser.fullName.charAt(0).toUpperCase() : "RN"}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-black tracking-tight">
+                नमस्ते, {nurseUser?.fullName || "परिचारिका भगिनी (Staff Nurse)"}
+              </h1>
+              <ShieldCheck className="w-4 h-4 text-emerald-300" />
+            </div>
+            <p className="text-xs text-teal-100 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+              <span>Nurse ID: <strong className="font-mono text-white">{nurseUser?.nurseProfile?.nurseCode || "SANGLI-RN-VERIFIED"}</strong></span>
+              {nurseUser?.nurseProfile?.registrationNumber && (
+                <span>• MNC Reg: <strong className="font-mono text-white">{nurseUser.nurseProfile.registrationNumber}</strong></span>
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-xs font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Duty Active (सांगली नेटवर्क)</span>
+          </span>
+        </div>
+      </div>
 
       {/* Top Performance Glance */}
       <div className="grid grid-cols-3 gap-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-center">

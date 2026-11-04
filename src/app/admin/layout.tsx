@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   AlertCircle,
   LogOut,
+  UserCheck,
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       label: "Nurses & Privileges",
       href: "/admin/nurses",
       icon: Users,
+    },
+    {
+      label: "Patients Database",
+      href: "/admin/patients",
+      icon: UserCheck,
     },
     {
       label: "Bookings & Ops",

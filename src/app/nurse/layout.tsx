@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Stethoscope, DollarSign, CalendarCheck, UserCheck, ShieldCheck, LogOut } from "lucide-react";
+import { Stethoscope, DollarSign, CalendarCheck, UserCheck, ShieldCheck, LogOut, HeartPulse } from "lucide-react";
 
 export default function NurseLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [nurseUser, setNurseUser] = useState<any | null>(null);
+  const [pendingOffersCount, setPendingOffersCount] = useState<number>(0);
 
   const handleNurseLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -20,10 +22,19 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  const [pendingOffersCount, setPendingOffersCount] = useState<number>(0);
-
   useEffect(() => {
     let isMounted = true;
+
+    // Fetch logged-in nurse user details
+    fetch("/api/auth/me?role=NURSE")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.user && isMounted) {
+          setNurseUser(data.user);
+        }
+      })
+      .catch(() => {});
+
     const fetchCounts = async () => {
       try {
         const res = await fetch("/api/bookings");
@@ -84,15 +95,22 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
       {/* Nurse Mobile / Desktop Top Bar */}
       <div className="px-4 sm:px-6 py-3.5 border-b border-slate-100 bg-teal-50/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-            RN
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-700 to-teal-500 text-white flex items-center justify-center font-black text-xs shadow-xs">
+            {nurseUser?.fullName ? nurseUser.fullName.charAt(0).toUpperCase() : "RN"}
           </div>
           <div>
-            <span className="text-[10px] font-bold tracking-wider uppercase text-teal-700">
-              Nurse Clinical Operations
-            </span>
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <span>Sangli Nurse Portal</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-teal-700">
+                Staff Registered Nurse
+              </span>
+              {nurseUser?.nurseProfile?.nurseCode && (
+                <span className="font-mono text-[9px] font-black bg-teal-200/70 text-teal-900 px-1.5 py-0.2 rounded">
+                  {nurseUser.nurseProfile.nurseCode}
+                </span>
+              )}
+            </div>
+            <h2 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+              <span>{nurseUser?.fullName || "Sister Registered Nurse, RN"}</span>
               <ShieldCheck className="w-4 h-4 text-teal-600" />
             </h2>
           </div>
