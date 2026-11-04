@@ -39,9 +39,9 @@ export default function SubmitReviewPage() {
 
   if (existingReview || submitted) {
     return (
-      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center space-y-3">
+      <div className="p-6 rounded-2xl bg-white border border-zinc-200 text-center space-y-3">
         <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-        <h2 className="text-base font-bold text-zinc-900 dark:text-white">Review Submitted</h2>
+        <h2 className="text-base font-bold text-zinc-900">Review Submitted</h2>
         <p className="text-xs text-zinc-500 max-w-xs mx-auto">
           Thank you for verifying your clinical care experience. Your feedback helps maintain high standards across Careoon.
         </p>
@@ -78,14 +78,14 @@ export default function SubmitReviewPage() {
     <div className="space-y-4">
       <button
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+        className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Back
       </button>
 
       <div className="space-y-1">
-        <h1 className="text-lg font-bold text-zinc-900 dark:text-white">
+        <h1 className="text-lg font-bold text-zinc-900">
           Review Your Nursing Care
         </h1>
         <p className="text-xs text-zinc-500">
@@ -93,10 +93,10 @@ export default function SubmitReviewPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
+      <form onSubmit={handleSubmit} className="p-4 rounded-2xl bg-white border border-zinc-200 space-y-4">
         {/* Rating Stars */}
         <div className="text-center space-y-1.5 py-2">
-          <div className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+          <div className="text-xs font-semibold text-zinc-700">
             Overall Clinical Rating
           </div>
           <div className="flex items-center justify-center gap-1.5">
@@ -113,7 +113,7 @@ export default function SubmitReviewPage() {
                   className={`w-7 h-7 ${
                     (hoverRating || rating) >= star
                       ? "fill-amber-400 text-amber-400"
-                      : "text-zinc-300 dark:text-zinc-700"
+                      : "text-zinc-300"
                   }`}
                 />
               </button>
@@ -126,7 +126,7 @@ export default function SubmitReviewPage() {
 
         {/* Written Review */}
         <div className="space-y-1">
-          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="text-[11px] font-medium text-zinc-600">
             Care Details & Clinical Observations
           </label>
           <textarea
@@ -135,7 +135,7 @@ export default function SubmitReviewPage() {
             value={reviewText}
             onChange={(e) => setReviewText(e.target.value)}
             placeholder="How was the nurse's punctuality, sterile technique, bedside manner, and explanation?"
-            className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs bg-zinc-50 dark:bg-zinc-800 outline-hidden focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 rounded-xl border border-zinc-200 text-xs bg-zinc-50 outline-hidden focus:ring-2 focus:ring-blue-500"
           />
         </div>
 

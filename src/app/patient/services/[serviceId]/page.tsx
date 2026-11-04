@@ -45,7 +45,7 @@ export default function ServiceDetailPage() {
       {/* Back Button */}
       <button
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Back to Catalog
@@ -53,23 +53,23 @@ export default function ServiceDetailPage() {
 
       {/* Main Service Card */}
       <div className="space-y-3">
-        <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+        <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700">
           {category?.name || "Home Nursing"}
         </div>
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-white leading-tight">
+        <h1 className="text-xl font-bold text-zinc-900 leading-tight">
           {service.name}
         </h1>
 
-        <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700">
+        <div className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 border border-zinc-200">
           <div>
             <div className="text-[11px] text-zinc-400 font-medium">Fixed Standard Price</div>
-            <div className="text-lg font-extrabold text-blue-600 dark:text-blue-400">
+            <div className="text-lg font-extrabold text-blue-600">
               {formatCurrency(service.basePrice)}
             </div>
           </div>
           <div className="text-right">
             <div className="text-[11px] text-zinc-400 font-medium">Estimated Duration</div>
-            <div className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1 justify-end">
+            <div className="text-sm font-bold text-zinc-800 flex items-center gap-1 justify-end">
               <Clock className="w-3.5 h-3.5 text-zinc-500" />
               {service.durationMinutes} Minutes
             </div>
@@ -82,7 +82,7 @@ export default function ServiceDetailPage() {
         <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
           Procedure Overview
         </h3>
-        <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <p className="text-xs text-zinc-600 leading-relaxed bg-white p-3 rounded-xl border border-zinc-200">
           {service.description}
         </p>
       </div>
@@ -92,9 +92,9 @@ export default function ServiceDetailPage() {
         <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
           Patient Eligibility Requirements
         </h3>
-        <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2">
+        <div className="p-3 rounded-xl bg-white border border-zinc-200 space-y-2">
           {service.eligibilityConditions.map((condition, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+            <div key={idx} className="flex items-start gap-2 text-xs text-zinc-600">
               <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
               <span>{condition}</span>
             </div>
@@ -111,7 +111,7 @@ export default function ServiceDetailPage() {
           {service.serviceAreas.map((area) => (
             <span
               key={area}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-zinc-100 text-zinc-700 font-medium"
             >
               <MapPin className="w-3 h-3 text-zinc-400" />
               Zip {area}

@@ -171,7 +171,7 @@ export default function PatientProfilePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">
               Patient Clinical Profile
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-50 text-teal-800 border border-teal-200">
@@ -210,9 +210,9 @@ export default function PatientProfilePage() {
 
       <form onSubmit={handleSaveProfile} className="space-y-5">
         {/* 1. PERSONAL INFORMATION */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-400 flex items-center gap-2">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 flex items-center gap-2">
               <User className="w-4 h-4 text-teal-600" />
               <span>1. Personal & Contact Details</span>
             </h2>
@@ -221,7 +221,7 @@ export default function PatientProfilePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Full Name *
               </label>
               <input
@@ -230,12 +230,12 @@ export default function PatientProfilePage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Rahul Patil"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Phone Number (+91) *
               </label>
               <input
@@ -244,24 +244,24 @@ export default function PatientProfilePage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 9822012345"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Account Email
               </label>
               <input
                 type="email"
                 disabled
                 value={email}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 text-slate-500 font-medium cursor-not-allowed"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-medium cursor-not-allowed"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Age (Years)
               </label>
               <input
@@ -271,18 +271,18 @@ export default function PatientProfilePage() {
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="e.g. 34"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Gender
               </label>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               >
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
@@ -291,13 +291,13 @@ export default function PatientProfilePage() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Blood Group
               </label>
               <select
                 value={bloodGroup}
                 onChange={(e) => setBloodGroup(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               >
                 <option value="A+">A Positive (A+)</option>
                 <option value="A-">A Negative (A-)</option>
@@ -313,9 +313,9 @@ export default function PatientProfilePage() {
         </div>
 
         {/* 2. DEFAULT DOORSTEP ADDRESS (SANGLI - MIRAJ) */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-400 flex items-center gap-2">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-teal-600" />
               <span>2. Default Home Visit Address (Sangli District)</span>
             </h2>
@@ -326,7 +326,7 @@ export default function PatientProfilePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 House / Flat / Apartment Details *
               </label>
               <input
@@ -334,12 +334,12 @@ export default function PatientProfilePage() {
                 value={apartment}
                 onChange={(e) => setApartment(e.target.value)}
                 placeholder="e.g. Flat 302, Sai Vihar Residency"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Street, Area, Colony & Landmark *
               </label>
               <input
@@ -347,12 +347,12 @@ export default function PatientProfilePage() {
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
                 placeholder="e.g. Near Vishrambag Ganpati Temple, 100 Feet Road"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 City / Region
               </label>
               <input
@@ -364,7 +364,7 @@ export default function PatientProfilePage() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Postal Pincode *
               </label>
               <input
@@ -372,17 +372,17 @@ export default function PatientProfilePage() {
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
                 placeholder="416416"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-bold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-bold"
               />
             </div>
           </div>
         </div>
 
         {/* 3. SAVED FAMILY MEMBERS (ONE-TAP BOOKINGS) */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-400 flex items-center gap-2">
+              <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 flex items-center gap-2">
                 <Users className="w-4 h-4 text-teal-600" />
                 <span>3. Saved Family Members ({familyMembers.length})</span>
               </h2>
@@ -413,14 +413,14 @@ export default function PatientProfilePage() {
               {familyMembers.map((member: any) => (
                 <div
                   key={member.id}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 flex items-center justify-between text-xs"
+                  className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
                       {member.name.slice(0, 1).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-extrabold text-slate-900 dark:text-white">
+                      <div className="font-extrabold text-slate-900">
                         {member.name}
                       </div>
                       <div className="text-[11px] text-slate-400">
@@ -428,7 +428,7 @@ export default function PatientProfilePage() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-zinc-700 border border-slate-200 text-slate-600">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
                     Saved
                   </span>
                 </div>
@@ -438,9 +438,9 @@ export default function PatientProfilePage() {
         </div>
 
         {/* 4. EMERGENCY & CLINICAL NOTES */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-400 flex items-center gap-2">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 flex items-center gap-2">
               <Heart className="w-4 h-4 text-teal-600" />
               <span>4. Clinical Emergency & Allergies</span>
             </h2>
@@ -449,7 +449,7 @@ export default function PatientProfilePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Emergency Contact Name
               </label>
               <input
@@ -457,12 +457,12 @@ export default function PatientProfilePage() {
                 value={emergencyName}
                 onChange={(e) => setEmergencyName(e.target.value)}
                 placeholder="e.g. Suresh Patil (Brother)"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Emergency Contact Phone (+91)
               </label>
               <input
@@ -470,12 +470,12 @@ export default function PatientProfilePage() {
                 value={emergencyPhone}
                 onChange={(e) => setEmergencyPhone(e.target.value)}
                 placeholder="e.g. 9822998877"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Known Drug Allergies
               </label>
               <input
@@ -483,12 +483,12 @@ export default function PatientProfilePage() {
                 value={allergies}
                 onChange={(e) => setAllergies(e.target.value)}
                 placeholder="e.g. Penicillin, Sulfa, Iodine"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Chronic Medical Conditions
               </label>
               <input
@@ -496,7 +496,7 @@ export default function PatientProfilePage() {
                 value={chronicConditions}
                 onChange={(e) => setChronicConditions(e.target.value)}
                 placeholder="e.g. Type-2 Diabetes, Hypertension"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900"
               />
             </div>
           </div>

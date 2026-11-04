@@ -47,7 +47,7 @@ export default function PatientSupportPage() {
   return (
     <div className="space-y-5 pb-8">
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900">
           Care Support & Help
         </h1>
         <p className="text-xs text-zinc-500">
@@ -56,7 +56,7 @@ export default function PatientSupportPage() {
       </div>
 
       {success && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>Your support ticket has been received by the clinical care desk.</span>
         </div>
@@ -154,15 +154,15 @@ export default function PatientSupportPage() {
             {patientTickets.map((t) => (
               <div
                 key={t.id}
-                className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs space-y-1.5"
+                className="p-3 rounded-xl bg-white border border-zinc-200 text-xs space-y-1.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-zinc-900 dark:text-white">{t.subject}</span>
+                  <span className="font-bold text-zinc-900">{t.subject}</span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                       t.status === "resolved"
-                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                        : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
                     }`}
                   >
                     {t.status.toUpperCase()}
@@ -170,7 +170,7 @@ export default function PatientSupportPage() {
                 </div>
                 <p className="text-[11px] text-zinc-500">{t.description}</p>
                 {t.resolutionNotes && (
-                  <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 text-[10px] text-teal-800 dark:text-teal-300 border-l-2 border-teal-500">
+                  <div className="p-2 rounded-lg bg-zinc-50 text-[10px] text-teal-800 border-l-2 border-teal-500">
                     <span className="font-bold">Desk Resolution:</span> {t.resolutionNotes}
                   </div>
                 )}

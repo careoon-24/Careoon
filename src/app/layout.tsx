@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Careoon — Verified Home Nursing Marketplace",
-  description: "Real-time, mobile-first marketplace connecting certified home nurses and patients for verified post-op, wound care, and clinical procedures.",
+  description: "Real-time, mobile-first marketplace connecting certified home nurses and patients for verified post-op, wound care, and clinical procedures in Sangli-Miraj.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -46,8 +46,8 @@ export default function RootLayout({
         <CareoonProvider>
           <Suspense fallback={<div className="h-16 border-b border-slate-200 bg-white" />}>
             <Header />
-            <main className="flex-1 flex flex-col">{children}</main>
           </Suspense>
+          <main className="flex-1 flex flex-col">{children}</main>
         </CareoonProvider>
       </body>
     </html>
