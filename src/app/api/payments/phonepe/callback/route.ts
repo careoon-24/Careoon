@@ -213,3 +213,4 @@ export async function GET(req: NextRequest) {
   redirectUrl.searchParams.set('txn', txnId);
   return NextResponse.redirect(redirectUrl);
 }
+

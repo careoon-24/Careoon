@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { HeartPulse, User, LogOut, LogIn, Shield, Stethoscope } from "lucide-react";
+import { HeartPulse, User, LogOut, LogIn } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -17,31 +17,37 @@ export function Header() {
   const pathname = usePathname();
   const [user, setUser] = useState<UserProfile | null>(null);
 
-  // Do not render patient header on admin, nurse, or login routes
-  if (
+  const isExcludedPath =
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/nurse") ||
-    pathname?.startsWith("/login")
-  ) {
-    return null;
-  }
+    pathname?.startsWith("/login");
 
-  // Re-check authentication on route change
+  // Re-check authentication on route change - ALL HOOKS MUST RUN UNCONDITIONALLY
   useEffect(() => {
+    if (isExcludedPath) return;
+
+    let isMounted = true;
     fetch("/api/auth/me")
       .then((res) => {
         if (res.ok) return res.json();
         return null;
       })
       .then((data) => {
+        if (!isMounted) return;
         if (data?.authenticated && data.user) {
           setUser(data.user);
         } else {
           setUser(null);
         }
       })
-      .catch(() => setUser(null));
-  }, [pathname]);
+      .catch(() => {
+        if (isMounted) setUser(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname, isExcludedPath]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -49,6 +55,11 @@ export function Header() {
     router.push("/login");
     router.refresh();
   };
+
+  // Conditional render happens AFTER all React hooks are executed
+  if (isExcludedPath) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-colors">
@@ -95,7 +106,7 @@ export function Header() {
 
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-bold transition shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-bold transition shadow-2xs cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Logout</span>

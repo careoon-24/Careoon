@@ -137,10 +137,14 @@ export async function POST(req: NextRequest) {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
+    const message =
+      error?.message?.includes('connect') || error?.message?.includes('timeout')
+        ? 'डेटाबेस सर्व्हर सुरू होत आहे, कृपया ५ सेकंदांत पुन्हा प्रयत्न करा (Database is waking up, please retry in a moment)'
+        : error?.message || 'नोंदणी करताना त्रुटी आली, कृपया माहिती तपासून पुन्हा प्रयत्न करा';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }
